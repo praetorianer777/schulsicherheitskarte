@@ -2,11 +2,10 @@
 
 Anleitung für einen **Probebetrieb** auf einem eigenen Rechner oder Server.
 
-> **Was hier noch nicht entsteht:** Es gibt bisher **kein Frontend**. Diese Installation
-> liefert die API mit echten Unfall- und OpenStreetMap-Daten, nicht die Karte. Es gibt
-> außerdem keine Verschlüsselung, keinen vorgelagerten Webserver, keine Meldefunktion und
-> keine Moderation. Diese Installation gehört noch **nicht ins offene Internet** —
-> sondern ins lokale Netz oder hinter ein VPN.
+> **Was hier noch nicht entsteht:** Es gibt noch keine Meldefunktion und keine
+> Moderation, keine Verschlüsselung und kein Impressum. Diese Installation gehört noch
+> **nicht ins offene Internet** — sondern ins lokale Netz oder hinter einen Reverse Proxy,
+> der die Verschlüsselung übernimmt.
 
 ## Voraussetzungen
 
@@ -116,24 +115,27 @@ curl -s "localhost:8080/api/institutions/$ID/accidents?radius=500&modes=foot,bik
 Wenn `summary.total` größer als null ist und `sources` die beiden Lizenzen nennt, steht
 die Installation.
 
+Die Karte selbst liegt unter `http://localhost:8090` — Schule suchen, auf einen Treffer
+klicken.
+
 ## 4a. Hinter einem Reverse Proxy
 
 Läuft der Reverse Proxy — etwa Nginx Proxy Manager — auf einer **anderen Maschine**,
 sind zwei Einstellungen wichtig.
 
-**Wohin die API veröffentlicht wird.** Voreingestellt ist `0.0.0.0`, also jede
-Netzwerkschnittstelle der Maschine. Damit ist die API auch direkt erreichbar, unter
-Umgehung des Proxys und allem, was dort eingestellt ist. Besser ist die Adresse, über
-die genau die Proxy-Maschine herankommt:
+**Ein Proxy Host, nicht zwei.** Der Web-Container liefert die Seite aus *und* reicht
+`/api` intern an die API weiter. Seite und Daten teilen sich damit eine Herkunft, der
+Proxy braucht nur einen Host, und CORS kommt nirgends vor:
 
 ```
-API_BIND=192.168.1.20     # LAN-Adresse dieses Docker-Hosts
-API_PORT=8080
+WEB_BIND=192.168.1.20     # LAN-Adresse dieses Docker-Hosts
+WEB_PORT=8090
+API_BIND=127.0.0.1        # die API wird über die Seite erreicht, nicht direkt
 ```
 
 Im Proxy Manager dann ein Proxy Host mit *Forward Hostname/IP* = `192.168.1.20` und
-*Forward Port* = `8080`. Läuft der Proxy auf derselben Maschine, ist `127.0.0.1` die
-richtige Antwort; dann kommt von außen überhaupt nichts direkt an die API.
+*Forward Port* = `8090`. Läuft der Proxy auf derselben Maschine, ist auch für `WEB_BIND`
+`127.0.0.1` die richtige Antwort.
 
 **Ob die API dem Proxy glaubt.** Hinter einem Proxy stammt jede Anfrage scheinbar vom
 Proxy. Die echte Client-Adresse steht dann nur im Header `X-Forwarded-For`:
@@ -147,11 +149,6 @@ der Aufrufer hineinschreibt. Solange der API-Port direkt erreichbar ist, kann je
 beliebige Adresse behaupten. Ihn einzuschalten ist die Aussage „der Proxy ist der einzige
 Weg herein" — und die stimmt nur zusammen mit einem passend gesetzten `API_BIND`. Die
 spätere Begrenzung der Meldungen pro Absender zählt genau diese Adresse.
-
-**Ein Hostname, nicht zwei.** Sobald das Frontend dazukommt, sollte der Proxy unter
-*einem* Hostnamen `/api` auf die API und alles Übrige auf das Frontend leiten. Zwei
-getrennte Hostnamen würden CORS erfordern — zusätzliche Konfiguration an einer Stelle,
-an der sie niemand vermutet, wenn sie fehlt.
 
 Die Datenbank wird nie auf dem Host veröffentlicht. Sie ist nur innerhalb des
 Compose-Netzes erreichbar, und dabei sollte es bleiben.
@@ -245,7 +242,7 @@ den Kasten in Abschnitt 2.
 
 ## Was fehlt, bevor das öffentlich laufen darf
 
-- Frontend (#8), Meldefunktion und Moderation (#9), Faktenblatt (#10)
+- Meldefunktion und Moderation (#9), Faktenblatt (#10)
 - TLS und ein vorgelagerter Webserver
 - Impressum und Datenschutzerklärung — bei einem öffentlich erreichbaren Angebot in
   Deutschland Pflicht

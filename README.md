@@ -93,6 +93,20 @@ Keine Verhandlungsmasse und kein späterer Aufräumdurchgang. Ziel ist **WCAG 2.
 - Automatisierte `axe-core`-Prüfungen laufen in der Testsuite mit. Sie fangen Rückschritte
   ab, ersetzen aber keinen manuellen Test mit Tastatur und Screenreader.
 
+## Oberfläche
+
+Die Startseite sucht Schulen und Kitas nach Namen. Die Einrichtungsseite zeigt die
+Unfälle im Umkreis auf einer Karte, dazu Kennzahlen, die nach Gefahrenindex sortierten
+Schwerpunkte, die Querungshilfen, Ampeln und Tempolimits ringsum — und jeden einzelnen
+Unfall als Tabellenzeile. Umkreis (250/500/1000 m), Zeitraum und der Schulweg-Blick
+(„nur Fuß- und Radbeteiligung") lassen sich umstellen.
+
+Die Unfallschwere wird auf der Karte über die **Größe** der Punkte gezeigt, nicht über
+Farbe: Drei Rottöne wären auf einer Karte weder sicher unterscheidbar noch
+kontraststark genug. Farbe trennt die Objektarten, und keine davon bedeutet etwas
+allein durch ihre Farbe — die Zeichenerklärung benennt jede, und die Tabelle enthält
+alles noch einmal in Worten.
+
 ## Technik
 
 - **Backend** — Go, PostgreSQL + PostGIS
