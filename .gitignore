@@ -1,0 +1,23 @@
+# Go
+/backend/bin/
+*.test
+
+# Frontend
+/frontend/node_modules/
+/frontend/dist/
+/frontend/.vite/
+
+# e2e
+/e2e/node_modules/
+/e2e/test-results/
+/e2e/playwright-report/
+
+# Importer-Cache: heruntergeladene Unfallatlas-ZIPs und Overpass-Antworten
+/data/
+
+# lokale Umgebung
+.env
+.env.local
+
+# Release-Notes werden pro Release generiert
+release-notes-*.md

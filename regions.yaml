@@ -1,0 +1,9 @@
+# The areas that get imported. Accident rows are filtered by the official
+# municipality key (ULAND/UREGBEZ/UKREIS/UGEMEINDE concatenated = AGS), OSM
+# queries by the bounding box. Both must mean the same area — the box may be
+# generous, the AGS prefix is what actually cuts.
+regions:
+  - name: Berlin
+    ags_prefixes: ["11"]
+    # minLon, minLat, maxLon, maxLat (WGS84)
+    bbox: [13.088, 52.338, 13.761, 52.675]
