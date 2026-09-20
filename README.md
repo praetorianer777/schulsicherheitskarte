@@ -1,84 +1,83 @@
 # 🚸 Schulweg-Sicherheitskarte
 
-Accident hotspots around every school and kindergarten in Germany, built from open
-data — so parent representatives can argue for a crosswalk or a 30 km/h zone with
-numbers instead of anecdotes.
+Unfallschwerpunkte rund um jede Schule und jede Kita, gebaut aus offenen Daten — damit
+Elternvertretungen für einen Zebrastreifen oder Tempo 30 mit Zahlen argumentieren
+können statt mit Anekdoten.
 
-> The user interface is German, because its users are German parents, school
-> administrations and road traffic authorities. Everything else in this repository —
-> code, comments, commits, issues, documentation — is English.
+> Diese README und die Weboberfläche sind deutsch, weil die Menschen deutsch sind, für
+> die dieses Projekt gebaut wird. Alles andere im Repository — Quellcode, Kommentare,
+> Commits, Issues, Pull Requests — ist englisch.
 
-## Why
+## Worum es geht
 
-Since the 2024 amendment of the German road traffic regulations (StVO), municipalities
-can order 30 km/h speed limits in front of schools and kindergartens far more easily.
-What is usually missing in the individual case is evidence. It exists, but it is
-scattered:
+Seit der StVO-Novelle 2024 können Kommunen Tempo 30 vor Schulen und Kitas deutlich
+leichter anordnen. Was im Einzelfall meist fehlt, sind belastbare Belege. Die gibt es,
+aber verstreut:
 
-- The **Unfallatlas** of the German statistical offices publishes every road accident
-  involving personal injury as an open, georeferenced dataset — including whether a
-  pedestrian or a cyclist was involved.
-- **OpenStreetMap** knows where the schools, kindergartens, crossings, traffic signals
-  and speed limits are.
+- Der **Unfallatlas** der Statistischen Ämter veröffentlicht jeden Straßenverkehrsunfall
+  mit Personenschaden als offenen, georeferenzierten Datensatz — inklusive der Angabe,
+  ob ein Fußgänger oder eine Radfahrerin beteiligt war.
+- **OpenStreetMap** weiß, wo Schulen, Kitas, Querungshilfen, Ampeln und Tempolimits sind.
 
-Nobody has put the two together per school. This project does, adds a crowdsourcing
-layer for near misses that never reach any statistic, and produces a printable
-fact sheet for the next road safety inspection.
+Zusammengeführt hat das bisher niemand pro Schule. Genau das macht dieses Projekt,
+ergänzt es um eine Meldefunktion für Beinahe-Unfälle, die in keiner Statistik auftauchen,
+und erzeugt daraus ein druckbares Faktenblatt für die nächste Verkehrsschau.
 
-## Data sources
+## Datenquellen
 
-| Source | What | Licence |
+| Quelle | Inhalt | Lizenz |
 |---|---|---|
-| [Unfallatlas](https://unfallatlas.statistikportal.de/), reporting years 2016–2025 | accidents involving personal injury, point geometry, pedestrian/cyclist involvement | `dl-de/by-2-0` |
-| [OpenStreetMap](https://www.openstreetmap.org/) via Overpass API | schools, kindergartens, crossings, traffic signals, traffic calming, speed limits | ODbL, attribution “© OpenStreetMap contributors” |
+| [Unfallatlas](https://unfallatlas.statistikportal.de/), Berichtsjahre 2016–2025 | Unfälle mit Personenschaden, Punktgeometrie, Beteiligung von Fuß- und Radverkehr | `dl-de/by-2-0` |
+| [OpenStreetMap](https://www.openstreetmap.org/) über die Overpass-API | Schulen, Kitas, Querungshilfen, Ampeln, verkehrsberuhigende Maßnahmen, Tempolimits | ODbL, Namensnennung „© OpenStreetMap-Mitwirkende“ |
 
-### What the data cannot tell you
+### Was die Daten nicht hergeben
 
-Stated on every fact sheet, because a claim that overreaches is taken apart at the
-first road safety inspection:
+Dieser Abschnitt steht auf jedem Faktenblatt, denn eine Behauptung, die über die Daten
+hinausgeht, wird in der ersten Verkehrsschau auseinandergenommen:
 
-- Only accidents **with personal injury** are recorded. Near misses, property damage
-  and everyday intimidation are invisible — that is what the reporting feature is for.
-- Coordinates are snapped to the road network and anonymised; a point marks a road
-  section, not a spot on the asphalt.
-- There is no traffic volume data, so these are **absolute frequencies, not risk
-  rates**. A quiet street with one accident is not automatically safer than a busy one
-  with three.
-- The absence of accidents is not evidence of safety.
+- Erfasst sind ausschließlich Unfälle **mit Personenschaden**. Beinahe-Unfälle,
+  Sachschäden und alltägliche Bedrängung sind unsichtbar — dafür gibt es die
+  Meldefunktion.
+- Die Koordinaten sind auf das Straßennetz gerastert und anonymisiert. Ein Punkt
+  bezeichnet einen Straßenabschnitt, nicht eine Stelle auf dem Asphalt.
+- Es gibt keine Angaben zur Verkehrsmenge. Damit sind das **absolute Häufigkeiten, keine
+  Risikoraten**: Eine ruhige Straße mit einem Unfall ist nicht automatisch sicherer als
+  eine stark befahrene mit dreien.
+- Dass an einer Stelle nichts passiert ist, belegt nicht, dass sie sicher ist.
 
-## Accessibility
+## Barrierefreiheit
 
-Non-negotiable, not a later clean-up pass. Target is **WCAG 2.2 level AA**:
+Keine Verhandlungsmasse und kein späterer Aufräumdurchgang. Ziel ist **WCAG 2.2, Stufe AA**:
 
-- every map has an equivalent list view — map content is never the only way to reach
-  information
-- fully keyboard operable, visible focus, no keyboard traps
-- severity is never encoded by colour alone; contrast ratios are checked, not guessed
-- correct document language, heading structure and form labels, live regions for
-  asynchronous results
-- `prefers-reduced-motion` is honoured for map animations
-- automated `axe-core` checks run in the test suite; they catch regressions, they do
-  not replace manual keyboard and screen reader testing
+- Zu jeder Karte gibt es eine gleichwertige Listenansicht — Karteninhalte sind nie der
+  einzige Weg zur Information.
+- Vollständig mit der Tastatur bedienbar, sichtbarer Fokus, keine Tastaturfallen.
+- Die Unfallschwere wird nie allein über Farbe ausgedrückt.
+- Korrekte Dokumentsprache, saubere Überschriftenstruktur, beschriftete Formularfelder,
+  Live-Regionen für asynchron nachgeladene Ergebnisse.
+- `prefers-reduced-motion` wird für Kartenanimationen respektiert.
+- Automatisierte `axe-core`-Prüfungen laufen in der Testsuite mit. Sie fangen Rückschritte
+  ab, ersetzen aber keinen manuellen Test mit Tastatur und Screenreader.
 
-## Stack
+## Technik
 
 - **Backend** — Go, PostgreSQL + PostGIS
 - **Frontend** — React, TypeScript, TailwindCSS, MapLibre GL
-- **Deployment** — Docker Compose, self-hosted
+- **Betrieb** — Docker Compose, selbst gehostet
 
-## Development
+## Entwicklung
 
 ```bash
-./run-tests.sh          # the one entry point: shell, Go, frontend, end-to-end
+./run-tests.sh          # der eine Einstiegspunkt: Shell, Go, Frontend, End-to-End
 ```
 
-Every change starts from a GitHub issue and lives on a branch
-`<type>/<issue>-<slug>`. `.claude/hooks/branch-guard.sh` enforces that: it refuses
-edits, commits and pushes outside an issue branch, refuses pushes to `main`, and runs
-`./run-tests.sh` before letting any push through.
+Jede Änderung beginnt bei einem GitHub-Issue und lebt auf einem Branch
+`<type>/<issue>-<slug>`. `.claude/hooks/branch-guard.sh` setzt das durch: Bearbeitungen,
+Commits und Pushes außerhalb eines Issue-Branches werden abgelehnt, Pushes auf `main`
+ebenfalls, und vor jedem Push läuft `./run-tests.sh`.
 
-## Licence
+## Lizenz
 
-[AGPL-3.0](LICENSE). This is a service people host rather than distribute, so the
-network clause is the point: anyone running a modified version publicly has to publish
-their changes.
+[AGPL-3.0](LICENSE). Dieses Projekt wird betrieben und nicht weitergegeben — genau
+deshalb die Netzwerkklausel: Wer eine veränderte Fassung öffentlich betreibt, muss seine
+Änderungen veröffentlichen.
