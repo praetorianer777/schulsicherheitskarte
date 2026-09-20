@@ -63,6 +63,22 @@ services:
       retries: 6
     restart: unless-stopped
 
+  web:
+    # Serves the built frontend and forwards /api to the api service, so the
+    # page and its data share one origin and the reverse proxy in front needs
+    # one host rather than two.
+    image: ghcr.io/praetorianer777/schulsicherheitskarte/web:${IMAGE_TAG:-main}
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+      target: web
+    ports:
+      - "${WEB_BIND:-0.0.0.0}:${WEB_PORT:-8090}:8080"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
   # Not started by `up`: imports are run on demand with
   #   docker compose run --rm importer accidents -years 2024-2025
   importer:
