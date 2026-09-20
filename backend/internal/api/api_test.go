@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strconv"
 	"strings"
 	"testing"
@@ -535,4 +536,63 @@ func TestBBoxSearchAlsoReportsAnEmptyDatabase(t *testing.T) {
 	if !body.NothingImported {
 		t.Error("an empty database answered like an empty map view")
 	}
+}
+
+func addSchool(t *testing.T, f *fixture, name string, osmID int64) {
+	t.Helper()
+	const q = `INSERT INTO institutions (osm_type, osm_id, kind, name, geom, tags)
+		VALUES ('node', $1, 'school', $2, ST_MakePoint($3, $4)::geography, '{}')`
+	if _, err := f.pool.Exec(context.Background(), q, osmID, name, schoolLon, schoolLat); err != nil {
+		t.Fatalf("insert %q: %v", name, err)
+	}
+}
+
+func TestSearchMatchesHowPeopleTypeAName(t *testing.T) {
+	f := seed(t)
+	addSchool(t, f, "Bergschule St. Egidien", 900)
+	addSchool(t, f, "Grundschule Mühlberger Straße", 901)
+
+	for _, c := range []struct {
+		typed string
+		want  string
+		why   string
+	}{
+		{"Bergschule St. Egidien", "Bergschule St. Egidien", "the official spelling"},
+		{"Bergschule St Egidien", "Bergschule St. Egidien", "nobody types the full stop"},
+		{"bergschule egidien", "Bergschule St. Egidien", "a word in the middle is left out"},
+		{"St Egidien", "Bergschule St. Egidien", "only the place is remembered"},
+		{"egidien bergschule", "Bergschule St. Egidien", "the words in the other order"},
+		{"Muehlberger Strasse", "Grundschule Mühlberger Straße", "umlauts written out"},
+		{"Bergshule Egidien", "Bergschule St. Egidien", "a typo still has to land"},
+	} {
+		var body institutionListBody
+		if status := f.get(t, "/api/institutions?q="+url.QueryEscape(c.typed), &body); status != http.StatusOK {
+			t.Fatalf("%q: status = %d", c.typed, status)
+		}
+		if len(body.Institutions) == 0 {
+			t.Errorf("%q found nothing (%s)", c.typed, c.why)
+			continue
+		}
+		if got := *body.Institutions[0].Name; got != c.want {
+			t.Errorf("%q found %q, want %q (%s)", c.typed, got, c.want, c.why)
+		}
+	}
+}
+
+func TestSearchStillFindsNothingForNonsense(t *testing.T) {
+	f := seed(t)
+	addSchool(t, f, "Bergschule St. Egidien", 900)
+
+	// Tolerating a typo must not turn into answering everything with anything.
+	var body institutionListBody
+	if status := f.get(t, "/api/institutions?q=zahnarztpraxis", &body); status != http.StatusOK {
+		t.Fatalf("status = %d", status)
+	}
+	if len(body.Institutions) != 0 {
+		t.Errorf("got %d hits for a word that means nothing here", len(body.Institutions))
+	}
+}
+
+type institutionListBody struct {
+	Institutions []api.Institution `json:"institutions"`
 }
