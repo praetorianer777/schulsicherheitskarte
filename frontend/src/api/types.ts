@@ -67,7 +67,13 @@ export type Infrastructure = {
   distance: number;
 };
 
-export type InstitutionList = { institutions: Institution[]; sources: Source[] };
+export type InstitutionList = {
+  institutions: Institution[];
+  // Set when the list is empty because nothing has been imported yet, rather
+  // than because nothing matched.
+  nothingImported?: boolean;
+  sources: Source[];
+};
 export type InstitutionDetail = { institution: Institution; sources: Source[] };
 export type AccidentList = {
   accidents: Accident[];

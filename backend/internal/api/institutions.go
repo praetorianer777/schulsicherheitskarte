@@ -24,7 +24,14 @@ type Institution struct {
 
 type institutionList struct {
 	Institutions []Institution `json:"institutions"`
-	Sources      []Source      `json:"sources"`
+
+	// NothingImported separates "no match" from "no data". Both arrive as an
+	// empty list, but one is answered by trying another spelling and the other
+	// by running the import — and an installation that has not been imported
+	// yet answers every search this way.
+	NothingImported bool `json:"nothingImported,omitempty"`
+
+	Sources []Source `json:"sources"`
 }
 
 const institutionColumns = `
@@ -96,7 +103,24 @@ func (s *Server) searchInstitutions(w http.ResponseWriter, r *http.Request) {
 		fail(w, r, err)
 		return
 	}
+
+	// Only asked when there is nothing to show, so the ordinary search pays
+	// nothing for it.
+	if len(list.Institutions) == 0 {
+		imported, err := s.anyInstitution(r.Context())
+		if err != nil {
+			fail(w, r, err)
+			return
+		}
+		list.NothingImported = !imported
+	}
 	writeJSON(w, http.StatusOK, list)
+}
+
+func (s *Server) anyInstitution(ctx context.Context) (bool, error) {
+	var exists bool
+	err := s.pool.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM institutions)`).Scan(&exists)
+	return exists, err
 }
 
 type institutionDetail struct {

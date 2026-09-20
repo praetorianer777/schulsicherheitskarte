@@ -60,6 +60,21 @@ describe("Startseite", () => {
     expect(await screen.findByText(/wurde nichts gefunden/)).toBeInTheDocument();
   });
 
+  // An installation that has not been imported answers every search this way,
+  // and "nothing found" would send the operator looking at the search instead
+  // of at the import.
+  it("unterscheidet eine leere Datenbank von einem leeren Treffer", async () => {
+    vi.stubGlobal("fetch", respondWith({ institutions: [], nothingImported: true, sources: [] }));
+    const user = userEvent.setup();
+    renderApp(<StartPage />);
+
+    await user.type(screen.getByLabelText("Schule oder Kita suchen"), "grundschule");
+    await user.click(screen.getByRole("button", { name: "Suchen" }));
+
+    expect(await screen.findByText(/noch keine Daten importiert/)).toBeInTheDocument();
+    expect(screen.queryByText(/wurde nichts gefunden/)).not.toBeInTheDocument();
+  });
+
   // The API names the parameter at fault and why; throwing that away would
   // leave the person with nothing to act on.
   it("zeigt die Begründung der API bei einem Fehler", async () => {

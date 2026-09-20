@@ -494,3 +494,45 @@ func TestUnknownAPIPathStaysAPlainNotFound(t *testing.T) {
 		t.Errorf("hint = %q, expected none", body["hint"])
 	}
 }
+
+func TestEmptyDatabaseIsNotAnEmptySearchResult(t *testing.T) {
+	f := seed(t)
+	var match struct {
+		Institutions    []api.Institution `json:"institutions"`
+		NothingImported bool              `json:"nothingImported"`
+	}
+
+	// A miss on a filled database is a miss, and says nothing about the import.
+	if status := f.get(t, "/api/institutions?q=gibtesnichtxyz", &match); status != http.StatusOK {
+		t.Fatalf("status = %d", status)
+	}
+	if len(match.Institutions) != 0 || match.NothingImported {
+		t.Errorf("got %d institutions, nothingImported = %v", len(match.Institutions), match.NothingImported)
+	}
+
+	dbtest.Truncate(t, f.pool, "institutions")
+
+	if status := f.get(t, "/api/institutions?q=gibtesnichtxyz", &match); status != http.StatusOK {
+		t.Fatalf("status = %d", status)
+	}
+	if !match.NothingImported {
+		t.Error("an empty database answered like an empty result")
+	}
+}
+
+func TestBBoxSearchAlsoReportsAnEmptyDatabase(t *testing.T) {
+	f := seed(t)
+	// The map view has the same problem: nothing in sight and nothing imported
+	// look alike.
+	dbtest.Truncate(t, f.pool, "institutions")
+
+	var body struct {
+		NothingImported bool `json:"nothingImported"`
+	}
+	if status := f.get(t, "/api/institutions?bbox=12.5,50.7,12.7,50.9", &body); status != http.StatusOK {
+		t.Fatalf("status = %d", status)
+	}
+	if !body.NothingImported {
+		t.Error("an empty database answered like an empty map view")
+	}
+}
