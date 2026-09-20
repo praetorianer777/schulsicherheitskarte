@@ -3,6 +3,7 @@ package osm
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 )
 
@@ -127,40 +128,70 @@ const (
 	unnamedRadiusMetres = 150
 )
 
-// rank says which of two mappings of the same institution to keep. A named
-// entry beats an unnamed one because it is the one a parent can search for, and
-// the grounds beat a node because they are what the accidents sit around.
+// rank orders the mappings of one institution by how much they are worth
+// keeping. A named entry beats an unnamed one because it is the one a parent
+// can search for. Among named ones the more complete mapping wins: a relation
+// describes the school, a way its grounds, a node only a spot on the map.
 func rank(i Institution) int {
 	switch {
 	case i.Name == "":
 		return 0
-	case i.OSMType == "node":
-		return 1
-	default:
+	case i.OSMType == "relation":
+		return 3
+	case i.OSMType == "way":
 		return 2
+	default:
+		return 1
 	}
 }
 
-// deduplicate drops an entry only when a strictly better one is close enough to
-// be the same institution. Strictness is what keeps the rule from dropping both
-// halves of a pair.
+// better is a total order, so exactly one of a group survives. The id decides
+// between two mappings of the same type, which makes the result independent of
+// the order Overpass happened to return them in.
+func better(a, b Institution) bool {
+	if rank(a) != rank(b) {
+		return rank(a) > rank(b)
+	}
+	return a.OSMID < b.OSMID
+}
+
+// deduplicate keeps the best mapping of each institution.
+//
+// It walks the entries best first and keeps one only if nothing already kept
+// supersedes it. Comparing against survivors rather than against all entries is
+// what keeps a discarded entry from discarding a third one: with A, B and C in
+// a row 250 m apart, B loses to A, and C — 500 m from A and no longer measured
+// against B — survives as the separate school it may well be.
 func deduplicate(all []Institution) []Institution {
-	kept := make([]Institution, 0, len(all))
-	for _, candidate := range all {
-		if !supersededBy(candidate, all) {
+	order := make([]Institution, len(all))
+	copy(order, all)
+	sort.SliceStable(order, func(i, j int) bool { return better(order[i], order[j]) })
+
+	var kept []Institution
+	for _, candidate := range order {
+		if !supersededBy(candidate, kept) {
 			kept = append(kept, candidate)
 		}
 	}
+	sort.Slice(kept, func(i, j int) bool {
+		if kept[i].OSMType != kept[j].OSMType {
+			return kept[i].OSMType < kept[j].OSMType
+		}
+		return kept[i].OSMID < kept[j].OSMID
+	})
 	return kept
 }
 
-func supersededBy(candidate Institution, all []Institution) bool {
-	for _, other := range all {
-		if other.Kind != candidate.Kind || rank(other) <= rank(candidate) {
+func supersededBy(candidate Institution, kept []Institution) bool {
+	for _, other := range kept {
+		if other.Kind != candidate.Kind {
 			continue
 		}
 		if candidate.Name == "" {
-			if withinMetres(candidate.Point, other.Point, unnamedRadiusMetres) {
+			// Two unnamed entries carry no evidence that they are the same
+			// place, and dropping one would silently lose an institution. Only
+			// a named neighbour settles it.
+			if other.Name != "" && withinMetres(candidate.Point, other.Point, unnamedRadiusMetres) {
 				return true
 			}
 			continue

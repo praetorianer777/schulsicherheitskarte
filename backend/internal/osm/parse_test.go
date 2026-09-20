@@ -185,6 +185,85 @@ func TestDifferentKindsAreNeverMerged(t *testing.T) {
 	}
 }
 
+func relation(id int64, lon, lat float64, tags map[string]string) string {
+	t, _ := json.Marshal(tags)
+	return fmt.Sprintf(`{"type":"relation","id":%d,"center":{"lat":%f,"lon":%f},"tags":%s}`, id, lat, lon, t)
+}
+
+// One school mapped as a relation for the school and a way for its grounds.
+// Both are named areas, so a rule that only drops a strictly weaker entry kept
+// both and the search offered the same school twice (#23).
+func TestRelationBeatsWayWithTheSameName(t *testing.T) {
+	body := institutionJSON(
+		area(461366281, 12.43434, 50.68085, map[string]string{"amenity": "school", "name": "Gymnasium Am Sandberg"}),
+		relation(1355930, 12.43438, 50.68117, map[string]string{"amenity": "school", "name": "Gymnasium Am Sandberg"}),
+	)
+	items, err := osm.ParseInstitutions(body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(items) != 1 {
+		t.Fatalf("kept %d entries for one school", len(items))
+	}
+	if items[0].OSMType != "relation" {
+		t.Errorf("kept the %s; the relation is the more complete mapping", items[0].OSMType)
+	}
+}
+
+// Two buildings of one school, each tagged with the school's name.
+func TestTwoWaysWithTheSameNameBecomeOne(t *testing.T) {
+	body := institutionJSON(
+		area(461366281, 12.43434, 50.68085, map[string]string{"amenity": "school", "name": "Grundschule Stenn"}),
+		area(201673735, 12.43438, 50.68117, map[string]string{"amenity": "school", "name": "Grundschule Stenn"}),
+	)
+	items, err := osm.ParseInstitutions(body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(items) != 1 {
+		t.Fatalf("kept %d entries for one school", len(items))
+	}
+	if items[0].OSMID != 201673735 {
+		t.Errorf("kept %d; the lower id decides, so the result does not depend on Overpass's order", items[0].OSMID)
+	}
+}
+
+// Whichever order Overpass returns them in, the same one has to survive, or a
+// re-import silently changes which id a school is reachable under.
+func TestTheSurvivorDoesNotDependOnTheOrder(t *testing.T) {
+	first := area(461366281, 12.43434, 50.68085, map[string]string{"amenity": "school", "name": "Grundschule Stenn"})
+	second := area(201673735, 12.43438, 50.68117, map[string]string{"amenity": "school", "name": "Grundschule Stenn"})
+
+	forwards, err := osm.ParseInstitutions(institutionJSON(first, second))
+	if err != nil {
+		t.Fatal(err)
+	}
+	backwards, err := osm.ParseInstitutions(institutionJSON(second, first))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(forwards) != 1 || len(backwards) != 1 || forwards[0].OSMID != backwards[0].OSMID {
+		t.Errorf("order changed the outcome: %v vs %v", forwards, backwards)
+	}
+}
+
+// A discarded entry must not discard a third one. B loses to A, but C is 500 m
+// from A and may well be the separate school its name suggests.
+func TestADiscardedEntryDoesNotDiscardAThird(t *testing.T) {
+	body := institutionJSON(
+		area(1, 12.6200, 50.7900, map[string]string{"amenity": "school", "name": "Goetheschule"}),
+		area(2, 12.6200, 50.7922, map[string]string{"amenity": "school", "name": "Goetheschule"}), // ~245 m from A
+		area(3, 12.6200, 50.7945, map[string]string{"amenity": "school", "name": "Goetheschule"}), // ~500 m from A
+	)
+	items, err := osm.ParseInstitutions(body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(items) != 2 {
+		t.Fatalf("kept %d entries; A absorbs B, but C is out of reach of A", len(items))
+	}
+}
+
 func TestParseInfrastructureClassifiesByTags(t *testing.T) {
 	items, err := osm.ParseInfrastructure(fixture(t, "crossings"))
 	if err != nil {
