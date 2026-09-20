@@ -43,6 +43,13 @@ export default function Legend() {
         </div>
 
         <div>
+          <dt className="font-medium">Gemeldete Gefahrenstellen</dt>
+          <dd className="mt-1">
+            <Swatch colour={mapColours.report} label="von Eltern gemeldet und freigegeben" />
+          </dd>
+        </div>
+
+        <div>
           <dt className="font-medium">Infrastruktur</dt>
           <dd className="mt-1 flex flex-wrap items-center gap-4">
             <Swatch colour={mapColours.crossing} label="Querungshilfe" />

@@ -3,6 +3,7 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
 	"errors"
 	"flag"
 	"fmt"
@@ -16,6 +17,7 @@ import (
 
 	"github.com/praetorianer777/schulsicherheitskarte/backend/internal/api"
 	"github.com/praetorianer777/schulsicherheitskarte/backend/internal/db"
+	"github.com/praetorianer777/schulsicherheitskarte/backend/internal/reports"
 )
 
 func main() {
@@ -47,11 +49,14 @@ func main() {
 	}
 	defer pool.Close()
 
+	handler := api.New(pool, api.Options{
+		TrustProxyHeaders: os.Getenv("TRUST_PROXY_HEADERS") == "true",
+		ModerationToken:   os.Getenv("MODERATION_TOKEN"),
+	}).WithReports(reports.NewStore(pool, reportSalt())).Routes()
+
 	server := &http.Server{
-		Addr: address,
-		Handler: api.New(pool, api.Options{
-			TrustProxyHeaders: os.Getenv("TRUST_PROXY_HEADERS") == "true",
-		}).Routes(),
+		Addr:              address,
+		Handler:           handler,
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 
@@ -72,6 +77,24 @@ func main() {
 	if err := server.Shutdown(shutdown); err != nil {
 		slog.Error("shutdown", "error", err)
 	}
+}
+
+// reportSalt keys the submitter fingerprint. Without a configured one a random
+// salt is generated: a fixed default would be no salt at all, and refusing to
+// start would take the whole site down over a feature that is not essential to
+// it. The cost is that the rate limit starts over after a restart, which is
+// why it says so.
+func reportSalt() []byte {
+	if configured := os.Getenv("REPORT_SALT"); configured != "" {
+		return []byte(configured)
+	}
+	salt := make([]byte, 32)
+	if _, err := rand.Read(salt); err != nil {
+		slog.Error("generate report salt", "error", err)
+		os.Exit(1)
+	}
+	slog.Warn("REPORT_SALT is not set; a random one was generated, so the reporting rate limit starts over on every restart")
+	return salt
 }
 
 func probe() int {

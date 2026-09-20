@@ -16,6 +16,12 @@ export const mapColours = {
   trafficSignals: "#eda100",
   trafficCalming: "#1baf7a",
   speedLimit: "#4a3aa7",
+  /**
+   * Reported places. Against aqua this pair sits in the 6–8 CVD band, which is
+   * only allowed with a second encoding — the report marker is drawn larger
+   * and with a thicker ring, and every report is in the list below the map.
+   */
+  report: "#e87ba4",
   institution: "#0b0b0b",
   /** A ring in the surface colour separates overlapping marks. */
   ring: "#ffffff",

@@ -44,6 +44,8 @@ services:
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER:-ssk}:${POSTGRES_PASSWORD:-ssk}@postgres:5432/${POSTGRES_DB:-ssk}?sslmode=disable
       TRUST_PROXY_HEADERS: ${TRUST_PROXY_HEADERS:-false}
+      REPORT_SALT: ${REPORT_SALT:-}
+      MODERATION_TOKEN: ${MODERATION_TOKEN:-}
     ports:
       # The bind address is part of the configuration, not just the port: with
       # a reverse proxy on another machine, publishing to every interface means

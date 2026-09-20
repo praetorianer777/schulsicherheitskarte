@@ -84,3 +84,25 @@ export type InfrastructureList = {
 };
 
 export type ApiError = { error: string; parameter?: string };
+
+export type ReportCategory =
+  | "crossing_unsafe"
+  | "speeding"
+  | "missing_sidewalk"
+  | "blocked_view"
+  | "parking"
+  | "school_run_traffic"
+  | "other";
+
+export type Report = {
+  id: string;
+  lon: number;
+  lat: number;
+  category: ReportCategory;
+  description: string;
+  status: "pending" | "approved" | "rejected";
+  createdAt: string;
+  confirmations: number;
+};
+
+export type ReportList = { reports: Report[]; categories: ReportCategory[] };

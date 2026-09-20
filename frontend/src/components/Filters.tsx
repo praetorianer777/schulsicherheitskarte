@@ -97,6 +97,11 @@ export default function Filters({ value, onChange, layers, onLayersChange, years
             checked={layers.infrastructure}
             onChange={(infrastructure) => onLayersChange({ ...layers, infrastructure })}
           />
+          <LayerToggle
+            label="Gemeldete Gefahrenstellen"
+            checked={layers.reports}
+            onChange={(reports) => onLayersChange({ ...layers, reports })}
+          />
         </div>
       </fieldset>
     </div>

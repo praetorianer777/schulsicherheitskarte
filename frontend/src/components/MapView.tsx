@@ -3,7 +3,7 @@ import type { GeoJSONSource } from "maplibre-gl";
 import { useEffect, useRef } from "react";
 import type { FeatureCollection } from "geojson";
 
-import type { Accident, Hotspot, Infrastructure, Institution } from "../api/types";
+import type { Accident, Hotspot, Infrastructure, Institution, Report } from "../api/types";
 import { mapColours, severityRadius } from "../lib/palette";
 import { institutionName } from "../lib/format";
 
@@ -14,6 +14,7 @@ export type LayerVisibility = {
   accidents: boolean;
   hotspots: boolean;
   infrastructure: boolean;
+  reports: boolean;
 };
 
 type Props = {
@@ -21,9 +22,13 @@ type Props = {
   accidents: Accident[];
   hotspots: Hotspot[];
   infrastructure: Infrastructure[];
+  reports: Report[];
   radius: number;
   layers: LayerVisibility;
   focus?: { lon: number; lat: number } | null;
+  /** The point a report is being placed at, while the form is open. */
+  draft?: { lon: number; lat: number } | null;
+  onPick?: (point: { lon: number; lat: number }) => void;
 };
 
 const empty: FeatureCollection = { type: "FeatureCollection", features: [] };
@@ -52,6 +57,17 @@ function hotspotFeatures(hotspots: Hotspot[]): FeatureCollection {
         radius: 10 + 26 * Math.sqrt(h.score / strongest),
         rank: index < 5 ? String(index + 1) : "",
       },
+    })),
+  };
+}
+
+function pointFeatures(points: { lon: number; lat: number }[]): FeatureCollection {
+  return {
+    type: "FeatureCollection",
+    features: points.map((p) => ({
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [p.lon, p.lat] },
+      properties: {},
     })),
   };
 }
@@ -91,11 +107,20 @@ export default function MapView({
   accidents,
   hotspots,
   infrastructure,
+  reports,
   radius,
   layers,
   focus,
+  draft,
+  onPick,
 }: Props) {
   const container = useRef<HTMLDivElement>(null);
+  // Held in a ref so the click handler registered once always calls the
+  // current one, without rebuilding the map whenever the page re-renders.
+  const pick = useRef(onPick);
+  useEffect(() => {
+    pick.current = onPick;
+  }, [onPick]);
   const map = useRef<MapLibreMap | null>(null);
   const ready = useRef(false);
 
@@ -119,6 +144,8 @@ export default function MapView({
       instance.addSource("hotspots", { type: "geojson", data: empty });
       instance.addSource("accidents", { type: "geojson", data: empty });
       instance.addSource("infrastructure", { type: "geojson", data: empty });
+      instance.addSource("reports", { type: "geojson", data: empty });
+      instance.addSource("draft", { type: "geojson", data: empty });
 
       instance.addLayer({
         id: "radius-fill",
@@ -198,6 +225,31 @@ export default function MapView({
       });
 
       instance.addLayer({
+        id: "report-points",
+        type: "circle",
+        source: "reports",
+        paint: {
+          "circle-radius": 7,
+          "circle-color": mapColours.report,
+          "circle-stroke-color": mapColours.ring,
+          "circle-stroke-width": 2,
+        },
+      });
+
+      instance.addLayer({
+        id: "draft-point",
+        type: "circle",
+        source: "draft",
+        paint: {
+          "circle-radius": 9,
+          "circle-color": mapColours.report,
+          "circle-opacity": 0.5,
+          "circle-stroke-color": mapColours.institution,
+          "circle-stroke-width": 3,
+        },
+      });
+
+      instance.addLayer({
         id: "institution-point",
         type: "circle",
         source: "radius",
@@ -209,6 +261,11 @@ export default function MapView({
       setData(instance, "accidents", accidentFeatures(accidents));
       setData(instance, "hotspots", hotspotFeatures(hotspots));
       setData(instance, "infrastructure", infrastructureFeatures(infrastructure));
+      setData(instance, "reports", pointFeatures(reports));
+    });
+
+    instance.on("click", (event) => {
+      pick.current?.({ lon: event.lngLat.lng, lat: event.lngLat.lat });
     });
 
     return () => {
@@ -242,9 +299,20 @@ export default function MapView({
   }, [infrastructure]);
 
   useEffect(() => {
+    if (map.current && ready.current) setData(map.current, "reports", pointFeatures(reports));
+  }, [reports]);
+
+  useEffect(() => {
+    if (map.current && ready.current) {
+      setData(map.current, "draft", pointFeatures(draft ? [draft] : []));
+    }
+  }, [draft]);
+
+  useEffect(() => {
     const instance = map.current;
     if (!instance || !ready.current) return;
     setVisible(instance, ["accident-points"], layers.accidents);
+    setVisible(instance, ["report-points"], layers.reports);
     setVisible(instance, ["hotspot-circles", "hotspot-rank"], layers.hotspots);
     setVisible(instance, ["infrastructure-points", "speed-limits"], layers.infrastructure);
   }, [layers]);
