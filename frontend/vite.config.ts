@@ -5,6 +5,8 @@ import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  // MapLibre loads its worker as a module, so the emitted worker has to be one.
+  worker: { format: "es" },
   server: {
     // The API is reached through the same origin in production, where the
     // reverse proxy routes /api. Proxying it in development keeps that true, so
