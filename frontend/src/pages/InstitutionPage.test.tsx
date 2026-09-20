@@ -126,6 +126,23 @@ describe("Einrichtungsseite", () => {
     expect(map).toHaveAccessibleName(/Liste unter der Karte enthält dieselben Angaben/);
   });
 
+  // A parent who changed the radius and then prints has to get the sheet they
+  // were looking at, not a default one.
+  it("nimmt die eingestellten Filter ins Faktenblatt mit", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByRole("heading", { name: "Peter Breuer Gymnasium" });
+
+    await user.click(screen.getByRole("radio", { name: "250 m" }));
+    await user.click(
+      screen.getByRole("checkbox", { name: /Nur Unfälle mit Fuß- oder Radbeteiligung/ }),
+    );
+
+    const link = screen.getByRole("link", { name: "Faktenblatt zum Ausdrucken" });
+    expect(link).toHaveAttribute("href", expect.stringContaining("radius=250"));
+    expect(link).toHaveAttribute("href", expect.stringContaining("modes=foot"));
+  });
+
   it("hat keine Barrierefreiheitsverstöße", async () => {
     const { container } = renderPage();
     await screen.findByRole("heading", { name: "Unfallschwerpunkte" });

@@ -268,7 +268,6 @@ den Kasten in Abschnitt 2.
 
 ## Was fehlt, bevor das öffentlich laufen darf
 
-- Faktenblatt (#10)
 - TLS und ein vorgelagerter Webserver
 - Impressum und Datenschutzerklärung — bei einem öffentlich erreichbaren Angebot in
   Deutschland Pflicht

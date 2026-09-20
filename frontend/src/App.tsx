@@ -1,5 +1,6 @@
 import { Link, Route, Routes } from "react-router-dom";
 
+import FactsheetPage from "./pages/FactsheetPage";
 import InstitutionPage from "./pages/InstitutionPage";
 import ModerationPage from "./pages/ModerationPage";
 import StartPage from "./pages/StartPage";
@@ -24,11 +25,12 @@ export default function App() {
           <Route path="/" element={<StartPage />} />
           <Route path="/einrichtung/:id" element={<InstitutionPage />} />
           <Route path="/moderation" element={<ModerationPage />} />
+          <Route path="/einrichtung/:id/faktenblatt" element={<FactsheetPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
 
-      <footer className="border-t border-line bg-white">
+      <footer className="site border-t border-line bg-white">
         <div className="mx-auto max-w-6xl px-4 py-4 text-sm text-ink-muted">
           <p>
             Unfalldaten:{" "}

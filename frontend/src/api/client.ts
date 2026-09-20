@@ -2,6 +2,7 @@ import type {
   AccidentList,
   Report,
   ReportList,
+  Factsheet,
   ApiError,
   HotspotList,
   InfrastructureList,
@@ -112,4 +113,6 @@ export const api = {
 
   moderate: (token: string, id: string, status: "approved" | "rejected", note: string) =>
     send<{ status: string }>(`/api/admin/reports/${id}`, "POST", { status, note }, token),
+  factsheet: (id: number, filter: AccidentFilter) =>
+    request<Factsheet>(`/api/institutions/${id}/factsheet`, { ...filter }),
 };

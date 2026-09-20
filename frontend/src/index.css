@@ -49,3 +49,44 @@ body {
 .skip-link:focus {
   left: 0;
 }
+
+/* The printed fact sheet. The screen version is a preview of this. */
+@media print {
+  @page {
+    size: A4;
+    margin: 15mm;
+  }
+
+  /* Navigation, the footer and the print button itself have no place on paper. */
+  header,
+  footer.site,
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: white;
+  }
+
+  .factsheet {
+    font-size: 10pt;
+  }
+
+  /* A table split across a page break is a table nobody can read. */
+  .factsheet table,
+  .factsheet section,
+  .factsheet footer {
+    break-inside: avoid;
+  }
+
+  /* Printers drop background colours by default, and the map is a background
+     as far as they are concerned. */
+  .factsheet {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  a[href]::after {
+    content: "";
+  }
+}

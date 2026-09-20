@@ -118,6 +118,17 @@ Freigabe. Gespeichert wird weder Name noch Adresse, sondern nur ein gesalzener P
 der Absenderadresse — genug, um „derselbe Absender nochmal" zu erkennen, und wertlos,
 sobald das Salt gewechselt wird.
 
+## Faktenblatt
+
+Jede Einrichtungsseite führt zu einem druckbaren Faktenblatt für die Verkehrsschau: eine
+A4-Seite mit Anschrift an die Straßenverkehrsbehörde, Kennzahlen, den Schwerpunkten als
+nummerierte Tabelle samt passender Karte, der vorhandenen Infrastruktur — und zwei
+Abschnitten, die nicht weggelassen werden: **wie der Gefahrenindex zustande kommt** und
+**was die Zahlen nicht hergeben**.
+
+Umkreis und Zeitraum stehen in der Adresse der Seite. Derselbe Link ergibt dieselben
+Zahlen — wer das Blatt weitergibt, gibt nicht versehentlich andere Zahlen weiter.
+
 ## Technik
 
 - **Backend** — Go, PostgreSQL + PostGIS

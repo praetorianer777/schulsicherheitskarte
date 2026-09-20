@@ -106,3 +106,24 @@ export type Report = {
 };
 
 export type ReportList = { reports: Report[]; categories: ReportCategory[] };
+export type Method = {
+  weightFatal: number;
+  weightSerious: number;
+  weightSlight: number;
+  weightVulnerable: number;
+  halfLifeYears: number;
+  clusterRadiusMetres: number;
+  clusterMinAccidents: number;
+  referenceYear: number;
+};
+
+export type Factsheet = {
+  institution: Institution;
+  radius: number;
+  years: { from: number; to: number };
+  summary: AccidentCounts;
+  hotspots: Hotspot[];
+  infrastructureCounts: Partial<Record<InfrastructureKind, number>>;
+  method: Method;
+  sources: Source[];
+};

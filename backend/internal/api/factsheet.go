@@ -119,15 +119,23 @@ func (s *Server) factsheet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// The reference year the index was computed with, so the sheet can say what
-	// "halved every four years" is measured against.
-	var reference *int
-	if err := s.pool.QueryRow(r.Context(), `SELECT max(year) FROM accidents`).Scan(&reference); err != nil {
+	// The reporting years the data actually holds. The sheet is printed and
+	// handed to an authority, so it must not state a range it does not cover —
+	// the upper bound of an unrestricted filter is a guard value, not a claim.
+	var first, last *int
+	const span = `SELECT min(year), max(year) FROM accidents`
+	if err := s.pool.QueryRow(r.Context(), span).Scan(&first, &last); err != nil {
 		fail(w, r, err)
 		return
 	}
-	if reference != nil {
-		sheet.Method.ReferenceYear = *reference
+	if last != nil {
+		sheet.Method.ReferenceYear = *last
+		if sheet.Years.To > *last {
+			sheet.Years.To = *last
+		}
+	}
+	if first != nil && sheet.Years.From < *first {
+		sheet.Years.From = *first
 	}
 
 	writeJSON(w, http.StatusOK, sheet)
