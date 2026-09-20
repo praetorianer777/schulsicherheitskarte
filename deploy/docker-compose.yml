@@ -38,8 +38,12 @@ services:
       target: api
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER:-ssk}:${POSTGRES_PASSWORD:-ssk}@postgres:5432/${POSTGRES_DB:-ssk}?sslmode=disable
+      TRUST_PROXY_HEADERS: ${TRUST_PROXY_HEADERS:-false}
     ports:
-      - "${API_PORT:-8080}:8080"
+      # The bind address is part of the configuration, not just the port: with
+      # a reverse proxy on another machine, publishing to every interface means
+      # the API can be reached around the proxy.
+      - "${API_BIND:-0.0.0.0}:${API_PORT:-8080}:8080"
     depends_on:
       postgres:
         condition: service_healthy

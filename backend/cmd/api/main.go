@@ -48,8 +48,10 @@ func main() {
 	defer pool.Close()
 
 	server := &http.Server{
-		Addr:              address,
-		Handler:           api.New(pool).Routes(),
+		Addr: address,
+		Handler: api.New(pool, api.Options{
+			TrustProxyHeaders: os.Getenv("TRUST_PROXY_HEADERS") == "true",
+		}).Routes(),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 

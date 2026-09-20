@@ -114,7 +114,7 @@ func seed(t *testing.T) *fixture {
 		}
 	}
 
-	f.server = httptest.NewServer(api.New(pool).Routes())
+	f.server = httptest.NewServer(api.New(pool, api.Options{}).Routes())
 	t.Cleanup(f.server.Close)
 	return f
 }

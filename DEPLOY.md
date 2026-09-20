@@ -99,6 +99,46 @@ curl -s "localhost:8080/api/institutions/$ID/accidents?radius=500&modes=foot,bik
 Wenn `summary.total` größer als null ist und `sources` die beiden Lizenzen nennt, steht
 die Installation.
 
+## 4a. Hinter einem Reverse Proxy
+
+Läuft der Reverse Proxy — etwa Nginx Proxy Manager — auf einer **anderen Maschine**,
+sind zwei Einstellungen wichtig.
+
+**Wohin die API veröffentlicht wird.** Voreingestellt ist `0.0.0.0`, also jede
+Netzwerkschnittstelle der Maschine. Damit ist die API auch direkt erreichbar, unter
+Umgehung des Proxys und allem, was dort eingestellt ist. Besser ist die Adresse, über
+die genau die Proxy-Maschine herankommt:
+
+```
+API_BIND=192.168.1.20     # LAN-Adresse dieses Docker-Hosts
+API_PORT=8080
+```
+
+Im Proxy Manager dann ein Proxy Host mit *Forward Hostname/IP* = `192.168.1.20` und
+*Forward Port* = `8080`. Läuft der Proxy auf derselben Maschine, ist `127.0.0.1` die
+richtige Antwort; dann kommt von außen überhaupt nichts direkt an die API.
+
+**Ob die API dem Proxy glaubt.** Hinter einem Proxy stammt jede Anfrage scheinbar vom
+Proxy. Die echte Client-Adresse steht dann nur im Header `X-Forwarded-For`:
+
+```
+TRUST_PROXY_HEADERS=true
+```
+
+Dieser Schalter ist voreingestellt **aus**, und das muss er sein: Der Header ist das, was
+der Aufrufer hineinschreibt. Solange der API-Port direkt erreichbar ist, kann jeder eine
+beliebige Adresse behaupten. Ihn einzuschalten ist die Aussage „der Proxy ist der einzige
+Weg herein" — und die stimmt nur zusammen mit einem passend gesetzten `API_BIND`. Die
+spätere Begrenzung der Meldungen pro Absender zählt genau diese Adresse.
+
+**Ein Hostname, nicht zwei.** Sobald das Frontend dazukommt, sollte der Proxy unter
+*einem* Hostnamen `/api` auf die API und alles Übrige auf das Frontend leiten. Zwei
+getrennte Hostnamen würden CORS erfordern — zusätzliche Konfiguration an einer Stelle,
+an der sie niemand vermutet, wenn sie fehlt.
+
+Die Datenbank wird nie auf dem Host veröffentlicht. Sie ist nur innerhalb des
+Compose-Netzes erreichbar, und dabei sollte es bleiben.
+
 ## 5. Aktualisieren
 
 ```bash
@@ -155,8 +195,12 @@ docker compose -f deploy/docker-compose.yml down -v
 
 ## Wenn etwas klemmt
 
-**`port is already allocated`** — Port 8080 ist belegt. In `deploy/.env` einen anderen
-`API_PORT` eintragen und erneut starten.
+**`port is already allocated`** — Port 8080 ist belegt. Einen anderen `API_PORT` in der
+Konfigurationsdatei eintragen und erneut starten.
+
+**Der Proxy erreicht die API nicht** — meist zeigt `API_BIND` auf eine Adresse, unter der
+die Proxy-Maschine nicht herankommt. Mit
+`ss -tlnp | grep <API_PORT>` prüfen, auf welcher Adresse tatsächlich gelauscht wird.
 
 **`api` wird nicht `healthy`** — Logs ansehen:
 `docker compose -f deploy/docker-compose.yml logs api`. Meist erreicht die API die
