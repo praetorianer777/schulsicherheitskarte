@@ -45,6 +45,40 @@ hinausgeht, wird in der ersten Verkehrsschau auseinandergenommen:
   eine stark befahrene mit dreien.
 - Dass an einer Stelle nichts passiert ist, belegt nicht, dass sie sicher ist.
 
+## Methode
+
+Ein **Unfallschwerpunkt** ist ein Kreis mit 50 m Radius, in dem mindestens zwei Unfälle
+liegen. Das Verfahren nimmt wiederholt den Kreis mit den meisten noch nicht zugeordneten
+Unfällen. Zwei Unfälle desselben Schwerpunkts liegen dadurch nie weiter als 100 m
+auseinander — eine Stelle, auf die man bei einer Verkehrsschau zeigen kann.
+
+Der naheliegende Algorithmus DBSCAN wurde zuerst probiert und verworfen: Er verkettet
+A mit B und B mit C und zieht im Stadtzentrum ganze Straßenzüge zusammen. Im Landkreis
+Zwickau entstand so ein „Schwerpunkt“ von 621 m Ausdehnung mit 72 Unfällen — und genau
+diese Klumpen standen ganz oben in der Rangliste.
+
+Jeder Schwerpunkt bekommt einen **Gefahrenindex**, die Summe über seine Unfälle:
+
+```
+Index = Σ  Gewicht_Schwere × Gewicht_Beteiligung × Gewicht_Aktualität
+```
+
+| Faktor | Wert | Begründung |
+|---|---|---|
+| Getötete | 10 | Ein Toter ist nicht fünf Leichtverletzte. Das Verhältnis ist eine Setzung — sie steht hier, statt in einer Abfrage versteckt zu sein. |
+| Schwerverletzte | 5 | |
+| Leichtverletzte | 1 | |
+| Fuß- oder Radbeteiligung | × 3 | Es geht um den Schulweg. Ein Auffahrunfall zwischen zwei Autos sagt darüber weniger aus als ein angefahrenes Kind an derselben Stelle. |
+| Aktualität | Halbwertszeit 4 Jahre | Infrastruktur ändert sich. Eine 2018 gebaute Querungshilfe wird nicht durch das beantwortet, was 2016 geschah. Vier Jahre sind kurz genug, um einer solchen Änderung zu folgen, und lang genug, dass ein ruhiges Jahr eine bekannte Gefahrenstelle nicht auslöscht. |
+
+Die Aktualität zählt vom **letzten importierten Berichtsjahr** zurück, nicht vom heutigen
+Datum. Damit hängt der Index von den Daten ab und nicht davon, wann jemand die Seite
+öffnet: Zwei Menschen, die dasselbe Faktenblatt einen Monat auseinander lesen, sehen
+dieselbe Zahl.
+
+Ein einzelner Unfall ist **kein** Schwerpunkt. Ihn als Muster zu präsentieren ist das,
+woran ein Faktenblatt in der ersten Verkehrsschau scheitert.
+
 ## Barrierefreiheit
 
 Keine Verhandlungsmasse und kein späterer Aufräumdurchgang. Ziel ist **WCAG 2.2, Stufe AA**:
