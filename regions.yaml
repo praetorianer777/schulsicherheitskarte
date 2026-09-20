@@ -2,8 +2,13 @@
 # municipality key (ULAND/UREGBEZ/UKREIS/UGEMEINDE concatenated = AGS), OSM
 # queries by the bounding box. Both must mean the same area — the box may be
 # generous, the AGS prefix is what actually cuts.
+#
+# Prefixes must not nest. St. Egidien (14524280) lies inside Landkreis Zwickau
+# (14524), so listing both would import its accidents twice.
 regions:
-  - name: Berlin
-    ags_prefixes: ["11"]
+  - name: Landkreis Zwickau
+    # Covers St. Egidien and the Zwickauer Land — the historic Landkreis
+    # Zwickauer Land was merged into Landkreis Zwickau in 2008.
+    ags_prefixes: ["14524"]
     # minLon, minLat, maxLon, maxLat (WGS84)
-    bbox: [13.088, 52.338, 13.761, 52.675]
+    bbox: [12.2263668, 50.5465600, 12.8061082, 50.9242066]
