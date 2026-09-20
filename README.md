@@ -137,6 +137,27 @@ Jede Änderung beginnt bei einem GitHub-Issue und lebt auf einem Branch
 Commits und Pushes außerhalb eines Issue-Branches werden abgelehnt, Pushes auf `main`
 ebenfalls, und vor jedem Push läuft `./run-tests.sh`.
 
+## API
+
+```
+GET /api/institutions?q=goethe                    Suche nach Name
+GET /api/institutions?bbox=minLon,minLat,maxLon,maxLat
+GET /api/institutions/{id}
+GET /api/institutions/{id}/accidents              ?radius=500&from=2016&to=2025&modes=foot,bike
+GET /api/institutions/{id}/hotspots               ?radius=500
+GET /api/institutions/{id}/infrastructure         ?radius=500
+GET /api/institutions/{id}/factsheet              ?radius=500&from=&to=&modes=
+GET /healthz
+```
+
+Jede Antwort, die Daten enthält, trägt ihre Quellenangaben mit — beide Lizenzen
+verlangen Namensnennung, und eine Karte, die sie nur in einer Fußzeile führt, verliert
+sie in dem Moment, in dem jemand die API direkt nutzt.
+
+`modes=foot,bike` bedeutet „zu Fuß **oder** mit dem Rad beteiligt", nicht beides
+gleichzeitig. Ein fehlerhafter Parameter beantwortet sich selbst: Die Antwort nennt den
+Parameter und den Grund, statt einem 400 ohne Erklärung oder einem 500.
+
 ## Lizenz
 
 [AGPL-3.0](LICENSE). Dieses Projekt wird betrieben und nicht weitergegeben — genau
