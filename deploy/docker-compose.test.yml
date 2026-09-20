@@ -15,7 +15,11 @@ services:
     command: >
       postgres -c fsync=off -c synchronous_commit=off -c full_page_writes=off
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ssk -d ssk_test"]
+      # -h forces a TCP connection. Without it the check passes against the
+      # temporary socket-only server that initdb runs while the database is
+      # still being created, and `up --wait` returns before anything can
+      # actually connect.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U ssk -d ssk_test"]
       interval: 2s
       timeout: 3s
       retries: 30

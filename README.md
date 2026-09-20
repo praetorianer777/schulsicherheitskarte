@@ -65,6 +65,22 @@ Keine Verhandlungsmasse und kein späterer Aufräumdurchgang. Ziel ist **WCAG 2.
 - **Frontend** — React, TypeScript, TailwindCSS, MapLibre GL
 - **Betrieb** — Docker Compose, selbst gehostet
 
+## Daten importieren
+
+```bash
+docker compose -f deploy/docker-compose.yml up -d
+docker compose -f deploy/docker-compose.yml run --rm importer accidents -years 2016-2025
+```
+
+Welches Gebiet importiert wird, steht in [`regions.yaml`](regions.yaml). Derzeit ist das
+der **Landkreis Zwickau** (AGS `14524`), der St. Egidien und das Gebiet des früheren
+Landkreises Zwickauer Land umfasst.
+
+Der Importer ist auf Wiederholung ausgelegt: Heruntergeladene Archive werden per ETag
+revalidiert statt erneut geladen, und ein erneuter Import derselben Datei schreibt keine
+Zeile. Jeder Lauf landet in `import_runs` — auch ein gescheiterter, damit sich jede Zahl
+auf der Karte auf den Import zurückführen lässt, aus dem sie stammt.
+
 ## Entwicklung
 
 ```bash
