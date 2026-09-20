@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -465,5 +466,31 @@ func TestFactsheetAgreesWithTheAccidentList(t *testing.T) {
 	}
 	if sheet.Summary.Total != list.Summary.Total {
 		t.Errorf("sheet says %d accidents, the map says %d", sheet.Summary.Total, list.Summary.Total)
+	}
+}
+
+func TestPathOutsideTheAPINamesTheWrongPort(t *testing.T) {
+	f := seed(t)
+	// The proxy forwards the page as well as its routes, so both have to say it.
+	for _, path := range []string{"/", "/einrichtung/1"} {
+		var body map[string]string
+		if status := f.get(t, path, &body); status != http.StatusNotFound {
+			t.Fatalf("%s: status = %d", path, status)
+		}
+		if !strings.Contains(body["hint"], "WEB_PORT") {
+			t.Errorf("%s: hint = %q, expected it to name WEB_PORT", path, body["hint"])
+		}
+	}
+}
+
+func TestUnknownAPIPathStaysAPlainNotFound(t *testing.T) {
+	f := seed(t)
+	// A wrong API call is the caller's own mistake and needs no deployment advice.
+	var body map[string]string
+	if status := f.get(t, "/api/gibtesnicht", &body); status != http.StatusNotFound {
+		t.Fatalf("status = %d", status)
+	}
+	if body["hint"] != "" {
+		t.Errorf("hint = %q, expected none", body["hint"])
 	}
 }
