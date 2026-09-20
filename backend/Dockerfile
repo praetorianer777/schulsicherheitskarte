@@ -6,6 +6,7 @@ RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 go build -o /out/migrate ./cmd/migrate \
  && CGO_ENABLED=0 go build -o /out/importer ./cmd/importer \
+ && CGO_ENABLED=0 go build -o /out/api ./cmd/api \
  && mkdir -p /out/cache
 
 FROM gcr.io/distroless/static-debian12 AS migrate
@@ -21,3 +22,9 @@ COPY --from=build /out/importer /importer
 COPY --from=build --chown=nonroot:nonroot /out/cache /data/cache
 USER nonroot:nonroot
 ENTRYPOINT ["/importer"]
+
+FROM gcr.io/distroless/static-debian12 AS api
+COPY --from=build /out/api /api
+EXPOSE 8080
+USER nonroot:nonroot
+ENTRYPOINT ["/api"]
