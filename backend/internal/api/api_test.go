@@ -436,6 +436,23 @@ func TestFactsheetCarriesTheMethodItUsed(t *testing.T) {
 	}
 }
 
+// The sheet is printed and handed over, so it must not state a range the data
+// does not cover. Without a "to" the filter reaches to a guard year far in the
+// future, and printing that would be a claim about years nobody has data for.
+func TestFactsheetReportsTheYearsItActuallyCovers(t *testing.T) {
+	f := seed(t)
+	var sheet api.Factsheet
+	path := "/api/institutions/" + itoa(f.schoolID) + "/factsheet?radius=2000"
+	if status := f.get(t, path, &sheet); status != http.StatusOK {
+		t.Fatalf("status = %d", status)
+	}
+
+	// The fixture holds accidents from 2018 to 2025.
+	if sheet.Years.From != 2018 || sheet.Years.To != 2025 {
+		t.Errorf("years = %d–%d, want the range the data covers, 2018–2025", sheet.Years.From, sheet.Years.To)
+	}
+}
+
 // The fact sheet and the map must not disagree: same filter, same number.
 func TestFactsheetAgreesWithTheAccidentList(t *testing.T) {
 	f := seed(t)

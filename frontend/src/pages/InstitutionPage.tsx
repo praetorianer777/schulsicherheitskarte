@@ -14,6 +14,18 @@ import Legend from "../components/Legend";
 import MapView, { type LayerVisibility } from "../components/MapView";
 import { institutionName, kindLabel } from "../lib/format";
 
+/** Carries the current filters into the sheet, so it states the numbers on
+ *  screen rather than a default set. */
+function factsheetLink(id: number, filters: FilterState): string {
+  const params = new URLSearchParams({
+    radius: String(filters.radius),
+    from: String(filters.from),
+    to: String(filters.to),
+  });
+  if (filters.onlyVulnerable) params.set("modes", "foot,bike");
+  return `/einrichtung/${id}/faktenblatt?${params}`;
+}
+
 /** The reporting years the Unfallatlas has published so far. */
 const firstYear = 2016;
 const lastYear = new Date().getFullYear();
@@ -127,11 +139,21 @@ export default function InstitutionPage() {
         <Link to="/">← Zurück zur Suche</Link>
       </p>
 
-      <h1 className="mt-2 text-2xl font-semibold">{institutionName(current)}</h1>
-      <p className="text-ink-muted">
-        {kindLabel[current.kind]}
-        {current.schoolType ? ` · ${current.schoolType}` : ""}
-      </p>
+      <div className="mt-2 flex flex-wrap items-baseline justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold">{institutionName(current)}</h1>
+          <p className="text-ink-muted">
+            {kindLabel[current.kind]}
+            {current.schoolType ? ` · ${current.schoolType}` : ""}
+          </p>
+        </div>
+        <Link
+          to={factsheetLink(current.id, filters)}
+          className="rounded border border-line bg-white px-4 py-2 no-underline"
+        >
+          Faktenblatt zum Ausdrucken
+        </Link>
+      </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[2fr_1fr]">
         <div className="space-y-4">
