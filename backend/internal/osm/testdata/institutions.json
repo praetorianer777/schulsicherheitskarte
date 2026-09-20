@@ -1,0 +1,139 @@
+{
+ "version": 0.6,
+ "generator": "Overpass API 0.7.62.11 87bfad18",
+ "osm3s": {
+  "timestamp_osm_base": "2026-09-20T13:13:11Z",
+  "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."
+ },
+ "elements": [
+  {
+   "type": "way",
+   "id": 24879752,
+   "center": {
+    "lat": 50.5553175,
+    "lon": 12.7579033
+   },
+   "tags": {
+    "amenity": "school",
+    "name": "Grundschule und Kindergarten Neuwelt"
+   }
+  },
+  {
+   "type": "way",
+   "id": 33132233,
+   "center": {
+    "lat": 50.74136,
+    "lon": 12.7459951
+   },
+   "tags": {
+    "access": "private",
+    "addr:city": "Lugau/Erzgeb.",
+    "addr:housenumber": "3",
+    "addr:postcode": "09385",
+    "addr:street": "Hohensteiner Straße",
+    "amenity": "kindergarten",
+    "contact:email": "friedrichfroebel@kinderwelt-erzgebirge.de",
+    "contact:phone": "+49 37295 2523",
+    "contact:website": "https://www.kinderwelt-erzgebirge.de/einrichtungen/kita-friedrich-froebel-lugau.html",
+    "name": "Kindergarten Friedrich Fröbel",
+    "operator": "Kinderwelt Erzgebirge e.V."
+   }
+  },
+  {
+   "type": "way",
+   "id": 34388425,
+   "center": {
+    "lat": 50.6040811,
+    "lon": 12.6294791
+   },
+   "tags": {
+    "access": "private",
+    "amenity": "kindergarten",
+    "name": "Kinderstagesstätte Wirbelzwirbel"
+   }
+  },
+  {
+   "type": "node",
+   "id": 288445636,
+   "lat": 50.7185437,
+   "lon": 12.4878844,
+   "tags": {
+    "addr:city": "Zwickau",
+    "addr:country": "DE",
+    "addr:housenumber": "2",
+    "addr:postcode": "08056",
+    "addr:street": "Alte Reichenbacher Straße",
+    "addr:suburb": "Banhofsvorstadt",
+    "amenity": "school",
+    "contact:email": "benedict@fuu-sachsen.de",
+    "contact:fax": "+49 375 2776611",
+    "contact:phone": "+49 375 277660",
+    "contact:website": "https://www.benedict-school-sachsen.de",
+    "name": "Bénédict School Zwickau",
+    "wheelchair": "no"
+   }
+  },
+  {
+   "type": "node",
+   "id": 290932161,
+   "lat": 50.8320227,
+   "lon": 12.7058582,
+   "tags": {
+    "amenity": "school",
+    "name": "Grundschule Langenberg"
+   }
+  },
+  {
+   "type": "node",
+   "id": 298657082,
+   "lat": 50.5667816,
+   "lon": 12.3748577,
+   "tags": {
+    "addr:city": "Lengenfeld",
+    "addr:housenumber": "23",
+    "addr:postcode": "08485",
+    "addr:street": "Oststraße",
+    "amenity": "school",
+    "education": "school",
+    "name": "Grundschule \"Am Park\""
+   }
+  },
+  {
+   "type": "relation",
+   "id": 1355930,
+   "center": {
+    "lat": 50.6137011,
+    "lon": 12.2472661
+   },
+   "tags": {
+    "addr:city": "Netzschkau",
+    "addr:housename": "Oberschule Netzschkau",
+    "addr:housenumber": "3",
+    "addr:postcode": "08491",
+    "addr:street": "Schulstraße",
+    "amenity": "school",
+    "building": "yes",
+    "name": "Oberschule \"Felix Mauersberger\" Netzschkau",
+    "type": "multipolygon"
+   }
+  },
+  {
+   "type": "node",
+   "id": 559585315,
+   "lat": 50.8559799,
+   "lon": 12.5706214,
+   "tags": {
+    "amenity": "kindergarten"
+   }
+  },
+  {
+   "type": "node",
+   "id": 1717805508,
+   "lat": 50.6179554,
+   "lon": 12.513246,
+   "tags": {
+    "amenity": "kindergarten"
+   }
+  }
+ ]
+}
