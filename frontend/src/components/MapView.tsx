@@ -261,7 +261,10 @@ export default function MapView({
   return (
     <div
       ref={container}
-      role="img"
+      // Not role="img": the zoom controls live inside this element, and an
+      // image has no exposed children, so marking it as one hides them from
+      // assistive technology. A region is announced and keeps them reachable.
+      role="region"
       aria-label={`Karte der Umgebung von ${institutionName(institution)} mit ${accidents.length} Unfällen im Umkreis von ${radius} Metern. Die Liste unter der Karte enthält dieselben Angaben.`}
       className="h-[420px] w-full rounded border border-line md:h-[560px]"
     />

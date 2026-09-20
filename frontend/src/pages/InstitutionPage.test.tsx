@@ -118,9 +118,11 @@ describe("Einrichtungsseite", () => {
     expect(screen.getByText(/keine Risikoraten/)).toBeInTheDocument();
   });
 
+  // The map is a region rather than an image: its zoom controls live inside it,
+  // and an image has no exposed children, so they would disappear.
   it("beschreibt die Karte für Screenreader", async () => {
     renderPage();
-    const map = await screen.findByRole("img");
+    const map = await screen.findByRole("region", { name: /Karte der Umgebung/ });
     expect(map).toHaveAccessibleName(/Liste unter der Karte enthält dieselben Angaben/);
   });
 

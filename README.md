@@ -151,6 +151,10 @@ Rechner bis zu einer API, die echte Unfalldaten für das konfigurierte Gebiet be
 ./run-tests.sh          # der eine Einstiegspunkt: Shell, Go, Frontend, End-to-End
 ```
 
+Die End-to-End-Stufe fährt den Compose-Stack hoch, spielt feste Testdaten ein, berechnet
+die Schwerpunkte mit dem echten Importer und bedient die Seite mit einem Browser. Sie
+räumt danach auf, auch wenn sie fehlschlägt.
+
 Jede Änderung beginnt bei einem GitHub-Issue und lebt auf einem Branch
 `<type>/<issue>-<slug>`. `.claude/hooks/branch-guard.sh` setzt das durch: Bearbeitungen,
 Commits und Pushes außerhalb eines Issue-Branches werden abgelehnt, Pushes auf `main`
