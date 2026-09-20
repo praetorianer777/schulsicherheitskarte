@@ -1,0 +1,153 @@
+{
+ "version": 0.6,
+ "generator": "Overpass API 0.7.62.11 87bfad18",
+ "osm3s": {
+  "timestamp_osm_base": "2026-09-20T13:13:11Z",
+  "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."
+ },
+ "elements": [
+  {
+   "type": "way",
+   "id": 3237164,
+   "bounds": {
+    "minlat": 50.8046276,
+    "minlon": 12.8013785,
+    "maxlat": 50.8080655,
+    "maxlon": 12.8055598
+   },
+   "geometry": [
+    {
+     "lat": 50.8046276,
+     "lon": 12.8055598
+    },
+    {
+     "lat": 50.8053504,
+     "lon": 12.80485
+    },
+    {
+     "lat": 50.8057765,
+     "lon": 12.8043655
+    },
+    {
+     "lat": 50.8064763,
+     "lon": 12.8034654
+    },
+    {
+     "lat": 50.807231,
+     "lon": 12.8025045
+    },
+    {
+     "lat": 50.8077567,
+     "lon": 12.8017826
+    },
+    {
+     "lat": 50.8080655,
+     "lon": 12.8013785
+    }
+   ],
+   "tags": {
+    "highway": "residential",
+    "maxspeed": "30",
+    "name": "Aktienstraße",
+    "wikidata": "Q99729558"
+   }
+  },
+  {
+   "type": "way",
+   "id": 3237166,
+   "bounds": {
+    "minlat": 50.807231,
+    "minlon": 12.8025045,
+    "maxlat": 50.8079485,
+    "maxlon": 12.8041788
+   },
+   "geometry": [
+    {
+     "lat": 50.807231,
+     "lon": 12.8025045
+    },
+    {
+     "lat": 50.8072589,
+     "lon": 12.8025613
+    },
+    {
+     "lat": 50.8074489,
+     "lon": 12.8029484
+    },
+    {
+     "lat": 50.8075899,
+     "lon": 12.8032029
+    },
+    {
+     "lat": 50.8076335,
+     "lon": 12.8032975
+    },
+    {
+     "lat": 50.8077221,
+     "lon": 12.8034826
+    },
+    {
+     "lat": 50.8078128,
+     "lon": 12.8037449
+    },
+    {
+     "lat": 50.8078477,
+     "lon": 12.8038567
+    },
+    {
+     "lat": 50.8079485,
+     "lon": 12.8041788
+    }
+   ],
+   "tags": {
+    "bicycle": "yes",
+    "foot": "yes",
+    "highway": "residential",
+    "horse": "yes",
+    "maxspeed": "30",
+    "motorcar": "yes",
+    "name": "Aktienstraße",
+    "wikidata": "Q99729558"
+   }
+  },
+  {
+   "type": "way",
+   "id": 3237169,
+   "bounds": {
+    "minlat": 50.8005243,
+    "minlon": 12.8016017,
+    "maxlat": 50.801595,
+    "maxlon": 12.8026226
+   },
+   "geometry": [
+    {
+     "lat": 50.8005243,
+     "lon": 12.8026226
+    },
+    {
+     "lat": 50.8011291,
+     "lon": 12.8019706
+    },
+    {
+     "lat": 50.8013434,
+     "lon": 12.8017542
+    },
+    {
+     "lat": 50.801595,
+     "lon": 12.8016017
+    }
+   ],
+   "tags": {
+    "cycleway:both": "no",
+    "hgv": "delivery",
+    "highway": "residential",
+    "maxspeed": "30",
+    "name": "Grünaer Straße",
+    "oneway": "no",
+    "sidewalk": "right",
+    "surface": "asphalt",
+    "zone:maxspeed": "DE:30"
+   }
+  }
+ ]
+}
