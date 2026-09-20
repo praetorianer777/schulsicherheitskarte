@@ -3,6 +3,7 @@ package api
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -60,6 +61,7 @@ func (s *Server) router() *chi.Mux {
 	r.Use(middleware.Timeout(30 * time.Second))
 
 	r.Get("/healthz", s.health)
+	r.NotFound(s.notFound)
 
 	r.Route("/api", func(r chi.Router) {
 		r.Get("/institutions", s.searchInstitutions)
@@ -83,6 +85,24 @@ func (s *Server) router() *chi.Mux {
 		})
 	})
 	return r
+}
+
+// notFound answers what the API does not serve. The case worth spending words
+// on is not a mistyped path but a reverse proxy pointed at the API port instead
+// of the web port: the site then answers 404 on every page, and "404 page not
+// found" gives the operator nothing to go on. A path outside /api is far more
+// likely to be that than a wrong API call, so it gets the explanation.
+func (s *Server) notFound(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path == "/api" || strings.HasPrefix(r.URL.Path, "/api/") {
+		writeJSON(w, http.StatusNotFound, errorBody{Error: "not found"})
+		return
+	}
+	writeJSON(w, http.StatusNotFound, errorBody{
+		Error: "not found",
+		Hint: "This port serves the API: /api/... and /healthz. The website is served " +
+			"by the web container on WEB_PORT — a reverse proxy belongs there, not here. " +
+			"See DEPLOY.md, section 4a.",
+	})
 }
 
 func (s *Server) health(w http.ResponseWriter, r *http.Request) {

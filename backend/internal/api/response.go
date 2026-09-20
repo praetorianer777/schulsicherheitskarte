@@ -32,6 +32,10 @@ var (
 type errorBody struct {
 	Error     string `json:"error"`
 	Parameter string `json:"parameter,omitempty"`
+
+	// Hint carries an explanation where the status alone would send the reader
+	// looking in the wrong place.
+	Hint string `json:"hint,omitempty"`
 }
 
 func writeJSON(w http.ResponseWriter, status int, body any) {

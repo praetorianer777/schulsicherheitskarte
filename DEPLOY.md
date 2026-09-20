@@ -246,6 +246,18 @@ docker compose -f deploy/docker-compose.yml down -v
 **`port is already allocated`** — Port 8080 ist belegt. Einen anderen `API_PORT` in der
 Konfigurationsdatei eintragen und erneut starten.
 
+**Jede Seite antwortet mit 404** — der Reverse Proxy zeigt auf `API_PORT` statt auf
+`WEB_PORT`. Die API kennt nur `/api/…` und `/healthz`, für die Seite selbst hat sie keine
+Route. Sie sagt das inzwischen auch:
+
+```bash
+curl -s localhost:8080/ | jq -r .hint
+# This port serves the API: /api/... and /healthz. The website is served by the web
+# container on WEB_PORT — a reverse proxy belongs there, not here.
+```
+
+Im Proxy Host also `8090` statt `8080` eintragen, siehe Abschnitt 4a.
+
 **Der Proxy erreicht die API nicht** — meist zeigt `API_BIND` auf eine Adresse, unter der
 die Proxy-Maschine nicht herankommt. Mit
 `ss -tlnp | grep <API_PORT>` prüfen, auf welcher Adresse tatsächlich gelauscht wird.
