@@ -1,0 +1,31 @@
+services:
+  postgres:
+    image: postgis/postgis:17-3.5-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ssk}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ssk}
+      POSTGRES_DB: ${POSTGRES_DB:-ssk}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ssk} -d ${POSTGRES_DB:-ssk}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # Applies the schema and exits. Everything that talks to the database waits
+  # for it to complete, so no service ever starts against a half-built schema.
+  migrate:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+      target: migrate
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-ssk}:${POSTGRES_PASSWORD:-ssk}@postgres:5432/${POSTGRES_DB:-ssk}?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+volumes:
+  postgres-data:
