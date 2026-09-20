@@ -11,6 +11,7 @@ Anleitung für einen **Probebetrieb** auf einem eigenen Rechner oder Server.
 ## Voraussetzungen
 
 - Docker mit Compose v2 (`docker compose version`)
+- **kein** Go, kein Node: die Images werden fertig aus der GitHub-Registry geladen
 - etwa **4 GB freier Plattenplatz**: rund 1 GB für die Images, 300 MB für die
   heruntergeladenen Unfallatlas-Archive, der Rest für die Datenbank
 - eine Internetverbindung für den Import — danach läuft alles offline
@@ -35,11 +36,27 @@ Gemeindeschlüssel und die Bounding-Box eintragen — beide müssen dasselbe Geb
 ## 2. Starten
 
 ```bash
-docker compose -f deploy/docker-compose.yml up -d --build
+docker compose -f deploy/docker-compose.yml pull
+docker compose -f deploy/docker-compose.yml up -d
 ```
 
-Das baut die Images, startet die Datenbank, wendet die Migrationen an und startet die
-API. Wenn alles läuft:
+Die Images kommen aus `ghcr.io/praetorianer777/schulsicherheitskarte/*` und werden bei
+jedem Stand von `main` neu gebaut. Sie werden nicht auf dieser Maschine gebaut — dafür
+wäre eine Go-Werkzeugkette nötig, und zwei am selben Tag aktualisierte Maschinen liefen
+sonst nicht zwangsläufig mit denselben Bytes.
+
+> **Pakete auf öffentlich stellen.** Pakete in der GitHub-Registry sind anfangs privat,
+> auch bei einem öffentlichen Repository. Einmalig unter *Packages* → jeweiliges Paket →
+> *Package settings* → *Change visibility* auf öffentlich setzen. Alternativ meldet sich
+> die Maschine an:
+> `echo <token> | docker login ghcr.io -u <benutzername> --password-stdin`
+> (Token mit dem Recht `read:packages`).
+
+Wer aus dem Quellcode bauen will statt zu laden, nimmt weiterhin
+`docker compose -f deploy/docker-compose.yml up -d --build`.
+
+Der Start bringt die Datenbank hoch, wendet die Migrationen an und startet die API. Wenn
+alles läuft:
 
 ```bash
 docker compose -f deploy/docker-compose.yml ps
@@ -142,9 +159,17 @@ Compose-Netzes erreichbar, und dabei sollte es bleiben.
 ## 5. Aktualisieren
 
 ```bash
-git pull
-docker compose -f deploy/docker-compose.yml up -d --build
+git pull                                              # Compose-Datei und regions.yaml
+docker compose -f deploy/docker-compose.yml pull      # neue Images
+docker compose -f deploy/docker-compose.yml up -d
 ```
+
+Der Checkout wird weiterhin gebraucht, aber nur noch für die Compose-Datei und
+`regions.yaml` — der Programmcode kommt aus der Registry.
+
+Wer nicht jedem Stand von `main` folgen will, trägt in der Konfigurationsdatei ein
+`IMAGE_TAG=sha-<kurzer Hash>` ein. Dann ist eine Aktualisierung eine bewusste Änderung
+dieses Werts statt dessen, was zwischenzeitlich gepusht wurde.
 
 Migrationen laufen beim Start automatisch. Wenn sich die Bewertung oder das Clustering
 geändert hat, müssen die Schwerpunkte neu berechnet werden:
@@ -214,6 +239,9 @@ Zwickau haben 154 von 382 benannten Einrichtungen keinen Unfall mit Personenscha
 500-Meter-Umkreis. Das ist ein Ergebnis, kein Fehler.
 
 **`overpass is busy`** — der Dienst ist ausgelastet. Später erneut versuchen.
+
+**`denied` oder `unauthorized` beim `pull`** — die Pakete stehen noch auf privat. Siehe
+den Kasten in Abschnitt 2.
 
 ## Was fehlt, bevor das öffentlich laufen darf
 

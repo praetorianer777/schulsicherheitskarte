@@ -20,6 +20,7 @@ services:
   # Applies the schema and exits. Everything that talks to the database waits
   # for it to complete, so no service ever starts against a half-built schema.
   migrate:
+    image: ghcr.io/praetorianer777/schulsicherheitskarte/migrate:${IMAGE_TAG:-main}
     build:
       context: ../backend
       dockerfile: Dockerfile
@@ -32,6 +33,10 @@ services:
     restart: "no"
 
   api:
+    # image and build side by side: a server pulls the published image, a
+    # checkout can still build it. `docker compose pull` fetches, `up --build`
+    # rebuilds from source.
+    image: ghcr.io/praetorianer777/schulsicherheitskarte/api:${IMAGE_TAG:-main}
     build:
       context: ../backend
       dockerfile: Dockerfile
@@ -62,6 +67,7 @@ services:
   #   docker compose run --rm importer accidents -years 2024-2025
   importer:
     profiles: ["tools"]
+    image: ghcr.io/praetorianer777/schulsicherheitskarte/importer:${IMAGE_TAG:-main}
     build:
       context: ../backend
       dockerfile: Dockerfile
