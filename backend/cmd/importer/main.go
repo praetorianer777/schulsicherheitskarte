@@ -37,6 +37,10 @@ func main() {
 		if err := importAccidents(ctx, os.Args[2:]); err != nil {
 			log.Fatalf("accidents: %v", err)
 		}
+	case "hotspots":
+		if err := recomputeHotspots(ctx, os.Args[2:]); err != nil {
+			log.Fatalf("hotspots: %v", err)
+		}
 	case "osm":
 		if err := importOSM(ctx, os.Args[2:]); err != nil {
 			log.Fatalf("osm: %v", err)
@@ -50,6 +54,7 @@ func usage() {
 	fmt.Fprintln(os.Stderr, "usage:")
 	fmt.Fprintln(os.Stderr, "  importer accidents [-years 2016-2025] [-regions regions.yaml] [-cache data/cache]")
 	fmt.Fprintln(os.Stderr, "  importer osm [-regions regions.yaml] [-cache data/cache/osm] [-offline]")
+	fmt.Fprintln(os.Stderr, "  importer hotspots")
 	os.Exit(2)
 }
 
