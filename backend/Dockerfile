@@ -4,9 +4,10 @@ WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-RUN CGO_ENABLED=0 go build -o /out/migrate ./cmd/migrate \
- && CGO_ENABLED=0 go build -o /out/importer ./cmd/importer \
- && CGO_ENABLED=0 go build -o /out/api ./cmd/api \
+ENV CGO_ENABLED=0
+RUN go build -o /out/migrate ./cmd/migrate \
+ && go build -o /out/importer ./cmd/importer \
+ && go build -o /out/api ./cmd/api \
  && mkdir -p /out/cache
 
 FROM gcr.io/distroless/static-debian12 AS migrate
