@@ -8,6 +8,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/praetorianer777/schulsicherheitskarte/backend/internal/reports"
 )
 
 type Options struct {
@@ -20,15 +22,29 @@ type Options struct {
 	// only way in. The rate limiting on reports will key on this address, and a
 	// rate limit keyed on a value the caller chooses is no rate limit at all.
 	TrustProxyHeaders bool
+
+	// ModerationToken guards the moderation queue. Empty means the queue is
+	// closed rather than open: a missing token must not mean no check.
+	ModerationToken string
 }
 
 type Server struct {
 	pool    *pgxpool.Pool
 	options Options
+
+	// nil when no salt is configured, which turns the reporting endpoints off
+	// rather than letting them run with a predictable fingerprint.
+	reports *reports.Store
 }
 
 func New(pool *pgxpool.Pool, options Options) *Server {
 	return &Server{pool: pool, options: options}
+}
+
+// WithReports enables the reporting endpoints.
+func (s *Server) WithReports(store *reports.Store) *Server {
+	s.reports = store
+	return s
 }
 
 func (s *Server) Routes() http.Handler { return s.router() }
@@ -53,6 +69,17 @@ func (s *Server) router() *chi.Mux {
 			r.Get("/hotspots", s.hotspots)
 			r.Get("/infrastructure", s.infrastructure)
 			r.Get("/factsheet", s.factsheet)
+			r.Get("/reports", s.institutionReports)
+		})
+
+		r.Get("/reports", s.listReports)
+		r.Post("/reports", s.createReport)
+		r.Post("/reports/{id}/confirm", s.confirmReport)
+
+		r.Route("/admin/reports", func(r chi.Router) {
+			r.Use(s.moderationOnly)
+			r.Get("/", s.moderationQueue)
+			r.Post("/{id}", s.moderateReport)
 		})
 	})
 	return r

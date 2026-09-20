@@ -2,8 +2,7 @@
 
 Anleitung für einen **Probebetrieb** auf einem eigenen Rechner oder Server.
 
-> **Was hier noch nicht entsteht:** Es gibt noch keine Meldefunktion und keine
-> Moderation, keine Verschlüsselung und kein Impressum. Diese Installation gehört noch
+> **Was hier noch nicht entsteht:** keine Verschlüsselung und kein Impressum. Diese Installation gehört noch
 > **nicht ins offene Internet** — sondern ins lokale Netz oder hinter einen Reverse Proxy,
 > der die Verschlüsselung übernimmt.
 
@@ -153,6 +152,33 @@ spätere Begrenzung der Meldungen pro Absender zählt genau diese Adresse.
 Die Datenbank wird nie auf dem Host veröffentlicht. Sie ist nur innerhalb des
 Compose-Netzes erreichbar, und dabei sollte es bleiben.
 
+## 4b. Meldefunktion und Moderation
+
+Eltern können Gefahrenstellen melden. Eine Meldung ist **nicht sofort öffentlich**: Sie
+landet in einer Warteschlange und erscheint erst nach Freigabe auf der Karte.
+
+Dafür sind zwei Werte nötig:
+
+```
+MODERATION_TOKEN=<lange Zufallszeichenkette>   # openssl rand -base64 32
+REPORT_SALT=<lange Zufallszeichenkette>
+```
+
+Ohne `MODERATION_TOKEN` ist die Warteschlange **geschlossen**, nicht offen — ein
+fehlendes Token bedeutet nie, dass keine Prüfung stattfindet. Die Moderation liegt unter
+`/moderation`; das Token wird dort eingegeben und nirgends gespeichert.
+
+`REPORT_SALT` schlüsselt den Wert, der statt der Absenderadresse gespeichert wird. Die
+Adresse selbst wird nie gespeichert — nur ein damit berechneter Prüfwert, der ohne das
+Salt wertlos ist und allein dazu dient, „derselbe Absender nochmal" von „jemand anders"
+zu unterscheiden. Bleibt das Salt leer, wird bei jedem Start ein zufälliges erzeugt; das
+funktioniert, setzt aber die Begrenzung pro Absender bei jedem Neustart zurück.
+
+Gemeldet werden dürfen höchstens zehn Stellen pro Absender und Tag.
+
+> **Vor dem öffentlichen Betrieb:** Wer Meldungen entgegennimmt, verarbeitet
+> Nutzereingaben und braucht Impressum und Datenschutzerklärung. Beides fehlt noch.
+
 ## 5. Aktualisieren
 
 ```bash
@@ -242,7 +268,7 @@ den Kasten in Abschnitt 2.
 
 ## Was fehlt, bevor das öffentlich laufen darf
 
-- Meldefunktion und Moderation (#9), Faktenblatt (#10)
+- Faktenblatt (#10)
 - TLS und ein vorgelagerter Webserver
 - Impressum und Datenschutzerklärung — bei einem öffentlich erreichbaren Angebot in
   Deutschland Pflicht

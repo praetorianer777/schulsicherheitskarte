@@ -107,6 +107,17 @@ kontraststark genug. Farbe trennt die Objektarten, und keine davon bedeutet etwa
 allein durch ihre Farbe — die Zeichenerklärung benennt jede, und die Tabelle enthält
 alles noch einmal in Worten.
 
+## Gemeldete Gefahrenstellen
+
+Beinahe-Unfälle tauchen in keiner Unfallstatistik auf. Eltern können solche Stellen
+deshalb selbst melden — mit Kategorie, kurzer Beschreibung und einem Punkt auf der Karte,
+der sich auch ohne Maus in 25-Meter-Schritten setzen lässt.
+
+Eine Meldung ist **nicht sofort öffentlich**. Sie wird gesichtet und erscheint erst nach
+Freigabe. Gespeichert wird weder Name noch Adresse, sondern nur ein gesalzener Prüfwert
+der Absenderadresse — genug, um „derselbe Absender nochmal" zu erkennen, und wertlos,
+sobald das Salt gewechselt wird.
+
 ## Technik
 
 - **Backend** — Go, PostgreSQL + PostGIS

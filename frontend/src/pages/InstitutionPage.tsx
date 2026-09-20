@@ -1,12 +1,14 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { api } from "../api/client";
-import type { Hotspot } from "../api/types";
+import type { Hotspot, Report } from "../api/types";
 import AccidentTable from "../components/AccidentTable";
 import Filters, { type FilterState } from "../components/Filters";
 import HotspotList from "../components/HotspotList";
+import ReportForm, { type ReportDraft } from "../components/ReportForm";
+import ReportList from "../components/ReportList";
 import KeyFigures from "../components/KeyFigures";
 import Legend from "../components/Legend";
 import MapView, { type LayerVisibility } from "../components/MapView";
@@ -30,8 +32,12 @@ export default function InstitutionPage() {
     accidents: true,
     hotspots: true,
     infrastructure: false,
+    reports: true,
   });
   const [focus, setFocus] = useState<{ lon: number; lat: number } | null>(null);
+  const [draft, setDraft] = useState<{ lon: number; lat: number } | null>(null);
+  const [confirmed, setConfirmed] = useState<Set<string>>(new Set());
+  const client = useQueryClient();
 
   const institution = useQuery({
     queryKey: ["institution", institutionId],
@@ -55,6 +61,25 @@ export default function InstitutionPage() {
     queryKey: ["hotspots", institutionId, filters.radius],
     queryFn: () => api.hotspots(institutionId, filters.radius),
     enabled: Number.isFinite(institutionId),
+  });
+
+  const reports = useQuery({
+    queryKey: ["reports", institutionId, filters.radius],
+    queryFn: () => api.reportsNear(institutionId, filters.radius),
+    enabled: Number.isFinite(institutionId),
+  });
+
+  const submitReport = useMutation({
+    mutationFn: (report: ReportDraft) => api.createReport(report),
+    onSuccess: () => client.invalidateQueries({ queryKey: ["reports", institutionId] }),
+  });
+
+  const confirmReport = useMutation({
+    mutationFn: (report: Report) => api.confirmReport(report.id),
+    onSuccess: (_result, report) => {
+      setConfirmed((previous) => new Set(previous).add(report.id));
+      client.invalidateQueries({ queryKey: ["reports", institutionId] });
+    },
   });
 
   const infrastructure = useQuery({
@@ -115,9 +140,12 @@ export default function InstitutionPage() {
             accidents={layers.accidents ? accidentList : []}
             hotspots={layers.hotspots ? (hotspots.data?.hotspots ?? []) : []}
             infrastructure={layers.infrastructure ? (infrastructure.data?.infrastructure ?? []) : []}
+            reports={layers.reports ? (reports.data?.reports ?? []) : []}
             radius={filters.radius}
             layers={layers}
             focus={focus}
+            draft={draft}
+            onPick={draft ? setDraft : undefined}
           />
           <Legend />
         </div>
@@ -130,6 +158,33 @@ export default function InstitutionPage() {
             onLayersChange={setLayers}
             years={{ first: firstYear, last: lastYear }}
           />
+
+          {draft ? (
+            <ReportForm
+              institution={current}
+              point={draft}
+              onPointChange={setDraft}
+              onSubmit={(report) => submitReport.mutate(report)}
+              onCancel={() => {
+                setDraft(null);
+                submitReport.reset();
+              }}
+              busy={submitReport.isPending}
+              submitted={submitReport.isSuccess}
+              error={submitReport.isError ? (submitReport.error as Error).message : null}
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={() => setDraft({ lon: current.lon, lat: current.lat })}
+              className="w-full rounded border border-line bg-white px-4 py-3 text-left"
+            >
+              <span className="font-medium">Gefahrenstelle melden</span>
+              <span className="block text-sm text-ink-muted">
+                Für das, was in keiner Unfallstatistik steht.
+              </span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -150,6 +205,11 @@ export default function InstitutionPage() {
         />
         <HotspotList hotspots={hotspots.data?.hotspots ?? []} onSelect={selectHotspot} />
         <AccidentTable accidents={accidentList} />
+        <ReportList
+          reports={reports.data?.reports ?? []}
+          onConfirm={(report) => confirmReport.mutate(report)}
+          confirmed={confirmed}
+        />
 
         <section aria-labelledby="grenzen" className="rounded border border-line bg-white p-4">
           <h2 id="grenzen" className="text-lg font-semibold">

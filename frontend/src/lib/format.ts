@@ -38,3 +38,32 @@ export function describeAccident(accident: Accident): string {
 export function institutionName(institution: Institution): string {
   return institution.name?.trim() || "Einrichtung ohne Namen in OpenStreetMap";
 }
+
+export const reportCategoryLabel: Record<string, string> = {
+  crossing_unsafe: "Querung unübersichtlich oder fehlt",
+  speeding: "Autos fahren zu schnell",
+  missing_sidewalk: "Gehweg fehlt oder ist zu schmal",
+  blocked_view: "Sicht versperrt",
+  parking: "Parkende Fahrzeuge behindern",
+  school_run_traffic: "Elterntaxis vor der Einrichtung",
+  other: "Sonstiges",
+};
+
+/**
+ * Where a reported point sits relative to the institution, in words. Somebody
+ * who cannot see the marker move still has to know where it went.
+ */
+export function describeOffset(
+  point: { lon: number; lat: number },
+  origin: { lon: number; lat: number },
+): string {
+  const north = (point.lat - origin.lat) * 111_320;
+  const east = (point.lon - origin.lon) * 111_320 * Math.cos((origin.lat * Math.PI) / 180);
+  const distance = Math.round(Math.hypot(north, east));
+  if (distance < 10) return "an der Einrichtung";
+
+  const parts: string[] = [];
+  if (Math.abs(north) >= 10) parts.push(north > 0 ? "nördlich" : "südlich");
+  if (Math.abs(east) >= 10) parts.push(east > 0 ? "östlich" : "westlich");
+  return `${distance} m ${parts.join(" und ")} der Einrichtung`;
+}

@@ -1,6 +1,7 @@
 import { Link, Route, Routes } from "react-router-dom";
 
 import InstitutionPage from "./pages/InstitutionPage";
+import ModerationPage from "./pages/ModerationPage";
 import StartPage from "./pages/StartPage";
 
 export default function App() {
@@ -22,6 +23,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<StartPage />} />
           <Route path="/einrichtung/:id" element={<InstitutionPage />} />
+          <Route path="/moderation" element={<ModerationPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
