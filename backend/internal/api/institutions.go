@@ -57,7 +57,7 @@ func (s *Server) searchInstitutions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var rows pgx.Rows
+	var found []Institution
 	switch {
 	case rawBox != "":
 		box, err := parseBBox(rawBox)
@@ -65,21 +65,13 @@ func (s *Server) searchInstitutions(w http.ResponseWriter, r *http.Request) {
 			fail(w, r, err)
 			return
 		}
-		const q = `SELECT ` + institutionColumns + ` FROM institutions
-			WHERE ST_Intersects(geom, ST_MakeEnvelope($1, $2, $3, $4, 4326)::geography)
-			ORDER BY name NULLS LAST, id LIMIT $5`
-		rows, err = s.pool.Query(r.Context(), q, box[0], box[1], box[2], box[3], limit)
+		found, err = s.institutionsInBox(r.Context(), box, limit)
 		if err != nil {
 			fail(w, r, err)
 			return
 		}
 	case name != "":
-		// Substring rather than prefix: people look for "Goethe", not for the
-		// official "Goetheschule Meerane".
-		const q = `SELECT ` + institutionColumns + ` FROM institutions
-			WHERE name ILIKE '%' || $1 || '%'
-			ORDER BY length(name), name LIMIT $2`
-		rows, err = s.pool.Query(r.Context(), q, name, limit)
+		found, err = s.institutionsByName(r.Context(), name, limit)
 		if err != nil {
 			fail(w, r, err)
 			return
@@ -88,25 +80,12 @@ func (s *Server) searchInstitutions(w http.ResponseWriter, r *http.Request) {
 		fail(w, r, invalid("q", "give either q to search by name or bbox to search the map view"))
 		return
 	}
-	defer rows.Close()
 
-	list := institutionList{Institutions: []Institution{}, Sources: []Source{sourceOSM}}
-	for rows.Next() {
-		i, err := scanInstitution(rows)
-		if err != nil {
-			fail(w, r, err)
-			return
-		}
-		list.Institutions = append(list.Institutions, i)
-	}
-	if err := rows.Err(); err != nil {
-		fail(w, r, err)
-		return
-	}
+	list := institutionList{Institutions: found, Sources: []Source{sourceOSM}}
 
 	// Only asked when there is nothing to show, so the ordinary search pays
 	// nothing for it.
-	if len(list.Institutions) == 0 {
+	if len(found) == 0 {
 		imported, err := s.anyInstitution(r.Context())
 		if err != nil {
 			fail(w, r, err)
@@ -115,6 +94,71 @@ func (s *Server) searchInstitutions(w http.ResponseWriter, r *http.Request) {
 		list.NothingImported = !imported
 	}
 	writeJSON(w, http.StatusOK, list)
+}
+
+func (s *Server) institutionsInBox(ctx context.Context, box [4]float64, limit int) ([]Institution, error) {
+	const q = `SELECT ` + institutionColumns + ` FROM institutions
+		WHERE ST_Intersects(geom, ST_MakeEnvelope($1, $2, $3, $4, 4326)::geography)
+		ORDER BY name NULLS LAST, id LIMIT $5`
+	rows, err := s.pool.Query(ctx, q, box[0], box[1], box[2], box[3], limit)
+	if err != nil {
+		return nil, err
+	}
+	return collectInstitutions(rows)
+}
+
+// institutionsByName matches the way the name was typed, not the way it is
+// written in OpenStreetMap. Every word has to occur, in any order and in any
+// part of the name, with punctuation and umlauts folded away by search_name:
+// "bergschule egidien" and "Bergschule St Egidien" both have to reach
+// "Bergschule St. Egidien", because nobody types the full stop.
+const institutionsByWord = `
+	WITH words AS (
+		SELECT array_agg('%' || word || '%') AS patterns
+		FROM unnest(string_to_array(search_name($1), ' ')) AS word
+		WHERE word <> ''
+	)
+	SELECT ` + institutionColumns + ` FROM institutions, words
+	WHERE name IS NOT NULL AND search_name(name) LIKE ALL (words.patterns)
+	ORDER BY length(name), name LIMIT $2`
+
+// A misspelled word matches none of the above, and an empty page is a worse
+// answer than a close one. Ordered by how close, so the guess stays visible as
+// a guess.
+const institutionsBySimilarity = `
+	SELECT ` + institutionColumns + ` FROM institutions
+	WHERE name IS NOT NULL AND search_name(name) % search_name($1)
+	ORDER BY similarity(search_name(name), search_name($1)) DESC, length(name), name
+	LIMIT $2`
+
+func (s *Server) institutionsByName(ctx context.Context, name string, limit int) ([]Institution, error) {
+	rows, err := s.pool.Query(ctx, institutionsByWord, name, limit)
+	if err != nil {
+		return nil, err
+	}
+	found, err := collectInstitutions(rows)
+	if err != nil || len(found) > 0 {
+		return found, err
+	}
+
+	rows, err = s.pool.Query(ctx, institutionsBySimilarity, name, limit)
+	if err != nil {
+		return nil, err
+	}
+	return collectInstitutions(rows)
+}
+
+func collectInstitutions(rows pgx.Rows) ([]Institution, error) {
+	defer rows.Close()
+	found := []Institution{}
+	for rows.Next() {
+		i, err := scanInstitution(rows)
+		if err != nil {
+			return nil, err
+		}
+		found = append(found, i)
+	}
+	return found, rows.Err()
 }
 
 func (s *Server) anyInstitution(ctx context.Context) (bool, error) {
