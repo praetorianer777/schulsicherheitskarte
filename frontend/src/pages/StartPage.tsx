@@ -16,6 +16,7 @@ export default function StartPage() {
   });
 
   const results = search.data?.institutions ?? [];
+  const nothingImported = search.data?.nothingImported ?? false;
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
@@ -41,7 +42,18 @@ export default function StartPage() {
           </p>
         )}
 
-        {search.isSuccess && results.length === 0 && (
+        {search.isSuccess && results.length === 0 && nothingImported && (
+          <div className="rounded border border-line bg-white p-4">
+            <h2 className="text-lg font-semibold">Es sind noch keine Daten importiert</h2>
+            <p className="mt-2">
+              Die Datenbank ist leer — deshalb findet die Suche nichts, egal wonach gesucht wird.
+              Wer diese Installation betreibt, muss den Import einmal ausführen; er ist in
+              DEPLOY.md in Abschnitt 3 beschrieben.
+            </p>
+          </div>
+        )}
+
+        {search.isSuccess && results.length === 0 && !nothingImported && (
           <p>
             Zu „{query}“ wurde nichts gefunden. Möglicherweise liegt die Einrichtung außerhalb
             des importierten Gebiets, oder sie ist in OpenStreetMap ohne Namen erfasst.

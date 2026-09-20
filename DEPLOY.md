@@ -266,6 +266,22 @@ die Proxy-Maschine nicht herankommt. Mit
 `docker compose -f deploy/docker-compose.yml logs api`. Meist erreicht die API die
 Datenbank nicht; dann auch `logs postgres` prüfen.
 
+**Die Suche findet nichts, auch bekannte Schulen nicht** — dann ist der OSM-Import nicht
+gelaufen. Die Startseite sagt das inzwischen selbst („Es sind noch keine Daten
+importiert"), statt wie bei einem Tippfehler zu antworten. Nachzählen lässt es sich so:
+
+```bash
+docker compose -f deploy/docker-compose.yml exec -T postgres psql -U ssk -d ssk \
+  -c "select (select count(*) from institutions) as einrichtungen,
+             (select count(*) from accidents) as unfaelle,
+             (select count(*) from hotspots) as schwerpunkte;" \
+  -c "select source, detail, status, rows_written, finished_at
+        from import_runs order by started_at desc limit 5;"
+```
+
+Für den Landkreis Zwickau stehen dort 443, 8332 und 1426. Fehlt in `import_runs` eine
+Zeile `osm … succeeded`, dann Abschnitt 3 nachholen.
+
 **Schwerpunktliste ist leer, Unfälle sind aber da** — `importer hotspots` wurde nicht
 ausgeführt. Er läuft nicht automatisch, weil er die Tabelle vollständig ersetzt.
 
