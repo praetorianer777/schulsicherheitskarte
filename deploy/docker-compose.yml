@@ -8,7 +8,11 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ssk} -d ${POSTGRES_DB:-ssk}"]
+      # -h forces a TCP connection. Without it the check passes against the
+      # temporary socket-only server that initdb runs while the database is
+      # still being created, and `up --wait` returns before anything can
+      # actually connect.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U ${POSTGRES_USER:-ssk} -d ${POSTGRES_DB:-ssk}"]
       interval: 5s
       timeout: 3s
       retries: 20
@@ -27,5 +31,25 @@ services:
         condition: service_healthy
     restart: "no"
 
+  # Not started by `up`: imports are run on demand with
+  #   docker compose run --rm importer accidents -years 2024-2025
+  importer:
+    profiles: ["tools"]
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+      target: importer
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-ssk}:${POSTGRES_PASSWORD:-ssk}@postgres:5432/${POSTGRES_DB:-ssk}?sslmode=disable
+    volumes:
+      - ../regions.yaml:/regions.yaml:ro
+      - importer-cache:/data/cache
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
 volumes:
   postgres-data:
+  importer-cache:
