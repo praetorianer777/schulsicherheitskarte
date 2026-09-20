@@ -126,6 +126,11 @@ der Karte und die Unfälle rund um eine Schule verteilten sich auf zwei Seiten. 
 die in OpenStreetMap verschwinden, werden beim nächsten Import aus dem importierten
 Gebiet entfernt.
 
+## Selbst betreiben
+
+[DEPLOY.md](DEPLOY.md) beschreibt eine Testinstallation mit Docker Compose — vom leeren
+Rechner bis zu einer API, die echte Unfalldaten für das konfigurierte Gebiet beantwortet.
+
 ## Entwicklung
 
 ```bash

@@ -1,0 +1,180 @@
+# Testinstallation
+
+Anleitung für einen **Probebetrieb** auf einem eigenen Rechner oder Server.
+
+> **Was hier noch nicht entsteht:** Es gibt bisher **kein Frontend**. Diese Installation
+> liefert die API mit echten Unfall- und OpenStreetMap-Daten, nicht die Karte. Es gibt
+> außerdem keine Verschlüsselung, keinen vorgelagerten Webserver, keine Meldefunktion und
+> keine Moderation. Diese Installation gehört noch **nicht ins offene Internet** —
+> sondern ins lokale Netz oder hinter ein VPN.
+
+## Voraussetzungen
+
+- Docker mit Compose v2 (`docker compose version`)
+- etwa **4 GB freier Plattenplatz**: rund 1 GB für die Images, 300 MB für die
+  heruntergeladenen Unfallatlas-Archive, der Rest für die Datenbank
+- eine Internetverbindung für den Import — danach läuft alles offline
+- Es werden keine Zugangsdaten und keine API-Schlüssel benötigt. Beide Datenquellen sind
+  offen.
+
+## 1. Holen und konfigurieren
+
+```bash
+git clone https://github.com/praetorianer777/schulsicherheitskarte.git
+cd schulsicherheitskarte
+cp deploy/.env.example deploy/.env
+```
+
+In `deploy/.env` mindestens das Datenbankkennwort ändern. Die Datenbank wird nicht auf
+dem Host veröffentlicht, aber ein Standardkennwort bleibt ein Standardkennwort.
+
+Welches Gebiet importiert wird, steht in [`regions.yaml`](regions.yaml). Voreingestellt
+ist der **Landkreis Zwickau**. Für ein anderes Gebiet dort den amtlichen
+Gemeindeschlüssel und die Bounding-Box eintragen — beide müssen dasselbe Gebiet meinen.
+
+## 2. Starten
+
+```bash
+docker compose -f deploy/docker-compose.yml up -d --build
+```
+
+Das baut die Images, startet die Datenbank, wendet die Migrationen an und startet die
+API. Wenn alles läuft:
+
+```bash
+docker compose -f deploy/docker-compose.yml ps
+```
+
+Beide Dienste müssen `healthy` melden. Der Dienst `migrate` ist ein Job und erscheint als
+beendet — das ist richtig so.
+
+## 3. Daten importieren
+
+Die Reihenfolge ist nicht beliebig: Schwerpunkte werden aus den Unfällen berechnet, also
+müssen die zuerst da sein.
+
+```bash
+cd deploy
+
+# Unfallatlas, zehn Berichtsjahre. Lädt rund 300 MB, dauert einige Minuten.
+docker compose run --rm importer accidents -years 2016-2025
+
+# Schulen, Kitas, Querungen, Ampeln, Tempolimits aus OpenStreetMap.
+docker compose run --rm importer osm
+
+# Schwerpunkte berechnen. Ohne diesen Schritt bleibt die Schwerpunktliste leer.
+docker compose run --rm importer hotspots
+```
+
+Erwartete Ausgabe für den Landkreis Zwickau:
+
+```
+2016: 151673 rows read, 150756 outside the configured regions, 917 newly imported
+…
+2025: 273007 rows read, 272207 outside the configured regions, 800 newly imported
+Landkreis Zwickau: 443 schools and kindergartens written, 0 gone from OpenStreetMap and removed
+Landkreis Zwickau/crossings: 2201 written, 0 removed
+Landkreis Zwickau/speed_limits: 15417 written, 0 removed
+8332 accidents clustered into 1426 hotspots, counting back from reporting year 2025
+```
+
+Der OSM-Import fragt die **Overpass-API** ab, einen ehrenamtlich betriebenen Dienst.
+Wenn er gerade ausgelastet ist, wartet der Importer und versucht es erneut. Bei
+`overpass is busy` einfach später noch einmal laufen lassen — oder mit
+`importer osm -offline` die zuletzt gespeicherte Antwort einspielen.
+
+## 4. Prüfen, ob es funktioniert hat
+
+```bash
+curl -s localhost:8080/healthz
+# {"status":"ok"}
+
+curl -s 'localhost:8080/api/institutions?q=grundschule' | jq '.institutions[:3]'
+
+# Unfälle im Umkreis von 500 m um eine Schule, nur Fuß- und Radbeteiligung
+ID=$(curl -s 'localhost:8080/api/institutions?q=Peter%20Breuer' | jq -r '.institutions[0].id')
+curl -s "localhost:8080/api/institutions/$ID/accidents?radius=500&modes=foot,bike" | jq '.summary'
+```
+
+Wenn `summary.total` größer als null ist und `sources` die beiden Lizenzen nennt, steht
+die Installation.
+
+## 5. Aktualisieren
+
+```bash
+git pull
+docker compose -f deploy/docker-compose.yml up -d --build
+```
+
+Migrationen laufen beim Start automatisch. Wenn sich die Bewertung oder das Clustering
+geändert hat, müssen die Schwerpunkte neu berechnet werden:
+
+```bash
+docker compose -f deploy/docker-compose.yml run --rm importer hotspots
+```
+
+Neue Berichtsjahre des Unfallatlas erscheinen ungefähr im Juli. Der Importer lädt bereits
+vorhandene Archive nicht erneut herunter, sondern fragt den Server nur, ob sie sich
+geändert haben:
+
+```bash
+docker compose -f deploy/docker-compose.yml run --rm importer accidents -years 2016-2026
+docker compose -f deploy/docker-compose.yml run --rm importer hotspots
+```
+
+## 6. Sichern
+
+Alles Importierte lässt sich jederzeit neu erzeugen, eine Sicherung spart nur die
+Importzeit. Sobald es Meldungen von Eltern gibt, ändert sich das — die sind nirgendwo
+sonst vorhanden.
+
+```bash
+docker compose -f deploy/docker-compose.yml exec -T postgres \
+  pg_dump -U ssk ssk | gzip > sicherung-$(date +%F).sql.gz
+```
+
+Für den Landkreis Zwickau sind das etwa 3 MB. Wer in `deploy/.env` einen anderen
+`POSTGRES_USER` oder `POSTGRES_DB` gesetzt hat, muss die beiden `ssk` hier ersetzen.
+
+Zurückspielen:
+
+```bash
+gunzip -c sicherung-2026-09-20.sql.gz | \
+  docker compose -f deploy/docker-compose.yml exec -T postgres psql -U ssk ssk
+```
+
+## 7. Beenden
+
+```bash
+# Anhalten, Daten behalten
+docker compose -f deploy/docker-compose.yml down
+
+# Anhalten und alles löschen, auch die Datenbank und den Download-Cache
+docker compose -f deploy/docker-compose.yml down -v
+```
+
+## Wenn etwas klemmt
+
+**`port is already allocated`** — Port 8080 ist belegt. In `deploy/.env` einen anderen
+`API_PORT` eintragen und erneut starten.
+
+**`api` wird nicht `healthy`** — Logs ansehen:
+`docker compose -f deploy/docker-compose.yml logs api`. Meist erreicht die API die
+Datenbank nicht; dann auch `logs postgres` prüfen.
+
+**Schwerpunktliste ist leer, Unfälle sind aber da** — `importer hotspots` wurde nicht
+ausgeführt. Er läuft nicht automatisch, weil er die Tabelle vollständig ersetzt.
+
+**Eine Schule hat keine Unfälle im Umkreis** — das ist oft einfach so. Im Landkreis
+Zwickau haben 154 von 382 benannten Einrichtungen keinen Unfall mit Personenschaden im
+500-Meter-Umkreis. Das ist ein Ergebnis, kein Fehler.
+
+**`overpass is busy`** — der Dienst ist ausgelastet. Später erneut versuchen.
+
+## Was fehlt, bevor das öffentlich laufen darf
+
+- Frontend (#8), Meldefunktion und Moderation (#9), Faktenblatt (#10)
+- TLS und ein vorgelagerter Webserver
+- Impressum und Datenschutzerklärung — bei einem öffentlich erreichbaren Angebot in
+  Deutschland Pflicht
+- die Prüfungen aus #20, die genau dieses Deployment automatisch testen
