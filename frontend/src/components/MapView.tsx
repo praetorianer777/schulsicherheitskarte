@@ -1,6 +1,6 @@
 import { Map as MapLibreMap, NavigationControl } from "maplibre-gl";
 import type { GeoJSONSource } from "maplibre-gl";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { FeatureCollection } from "geojson";
 
 import type { Accident, Hotspot, Infrastructure, Institution, Report } from "../api/types";
@@ -122,7 +122,10 @@ export default function MapView({
     pick.current = onPick;
   }, [onPick]);
   const map = useRef<MapLibreMap | null>(null);
-  const ready = useRef(false);
+  // State, not a ref: the requests are still in flight while the map is being
+  // built, and their results have to be pushed in once it is ready. A ref
+  // re-runs no effect, so everything that arrived in between was dropped.
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     if (!container.current || map.current) return;
@@ -256,12 +259,7 @@ export default function MapView({
         paint: { "circle-radius": 0 },
       });
 
-      ready.current = true;
-      setData(instance, "radius", radiusFeature(institution, radius));
-      setData(instance, "accidents", accidentFeatures(accidents));
-      setData(instance, "hotspots", hotspotFeatures(hotspots));
-      setData(instance, "infrastructure", infrastructureFeatures(infrastructure));
-      setData(instance, "reports", pointFeatures(reports));
+      setReady(true);
     });
 
     instance.on("click", (event) => {
@@ -271,7 +269,7 @@ export default function MapView({
     return () => {
       instance.remove();
       map.current = null;
-      ready.current = false;
+      setReady(false);
     };
     // The map is created once for an institution; everything else is pushed in
     // through the effects below rather than by rebuilding it.
@@ -279,43 +277,43 @@ export default function MapView({
   }, [institution.id]);
 
   useEffect(() => {
-    if (map.current && ready.current) {
+    if (map.current && ready) {
       setData(map.current, "radius", radiusFeature(institution, radius));
     }
-  }, [institution, radius]);
+  }, [institution, radius, ready]);
 
   useEffect(() => {
-    if (map.current && ready.current) setData(map.current, "accidents", accidentFeatures(accidents));
-  }, [accidents]);
+    if (map.current && ready) setData(map.current, "accidents", accidentFeatures(accidents));
+  }, [accidents, ready]);
 
   useEffect(() => {
-    if (map.current && ready.current) setData(map.current, "hotspots", hotspotFeatures(hotspots));
-  }, [hotspots]);
+    if (map.current && ready) setData(map.current, "hotspots", hotspotFeatures(hotspots));
+  }, [hotspots, ready]);
 
   useEffect(() => {
-    if (map.current && ready.current) {
+    if (map.current && ready) {
       setData(map.current, "infrastructure", infrastructureFeatures(infrastructure));
     }
-  }, [infrastructure]);
+  }, [infrastructure, ready]);
 
   useEffect(() => {
-    if (map.current && ready.current) setData(map.current, "reports", pointFeatures(reports));
-  }, [reports]);
+    if (map.current && ready) setData(map.current, "reports", pointFeatures(reports));
+  }, [reports, ready]);
 
   useEffect(() => {
-    if (map.current && ready.current) {
+    if (map.current && ready) {
       setData(map.current, "draft", pointFeatures(draft ? [draft] : []));
     }
-  }, [draft]);
+  }, [draft, ready]);
 
   useEffect(() => {
     const instance = map.current;
-    if (!instance || !ready.current) return;
+    if (!instance || !ready) return;
     setVisible(instance, ["accident-points"], layers.accidents);
     setVisible(instance, ["report-points"], layers.reports);
     setVisible(instance, ["hotspot-circles", "hotspot-rank"], layers.hotspots);
     setVisible(instance, ["infrastructure-points", "speed-limits"], layers.infrastructure);
-  }, [layers]);
+  }, [layers, ready]);
 
   useEffect(() => {
     const instance = map.current;

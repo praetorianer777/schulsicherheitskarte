@@ -5,14 +5,57 @@
  */
 import { vi } from "vitest";
 
-export const calls: { flyTo: unknown[]; jumpTo: unknown[]; layout: unknown[] } = {
+export const calls: {
+  flyTo: unknown[];
+  jumpTo: unknown[];
+  layout: unknown[];
+  data: { source: string; features: unknown[] }[];
+} = {
   flyTo: [],
   jumpTo: [],
   layout: [],
+  data: [],
 };
 
+/** The features last pushed into a source, or null if it was never filled. */
+export function sourceData(source: string): unknown[] | null {
+  const last = [...calls.data].reverse().find((entry) => entry.source === source);
+  return last ? last.features : null;
+}
+
+// A real map is ready only after its style has been fetched, which takes far
+// longer than the page's own requests. Tests that care about that order hold
+// the load event back and release it themselves.
+let heldHandlers: (() => void)[] = [];
+let holding = false;
+
+export function holdLoad() {
+  holding = true;
+  heldHandlers = [];
+}
+
+export function releaseLoad() {
+  holding = false;
+  const handlers = heldHandlers;
+  heldHandlers = [];
+  for (const handler of handlers) handler();
+}
+
+export function resetCalls() {
+  holding = false;
+  heldHandlers = [];
+  calls.flyTo.length = 0;
+  calls.jumpTo.length = 0;
+  calls.layout.length = 0;
+  calls.data.length = 0;
+}
+
 class StubSource {
-  setData = vi.fn();
+  constructor(private readonly id: string) {}
+
+  setData = (data: { features?: unknown[] }) => {
+    calls.data.push({ source: this.id, features: data.features ?? [] });
+  };
 }
 
 export class Map {
@@ -24,10 +67,15 @@ export class Map {
   addControl = vi.fn();
   on = (event: string, handler: () => void) => {
     this.handlers[event] = handler;
-    if (event === "load") handler();
+    // A browser fires load after the current task, never from inside on().
+    // Firing it synchronously made the map ready before the first effect ever
+    // ran, which hid the race that dropped everything arriving in between.
+    if (event !== "load") return;
+    if (holding) heldHandlers.push(handler);
+    else queueMicrotask(handler);
   };
   addSource = (id: string) => {
-    this.sources[id] = new StubSource();
+    this.sources[id] = new StubSource(id);
   };
   getSource = (id: string) => this.sources[id];
   addLayer = vi.fn();
