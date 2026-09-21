@@ -108,10 +108,11 @@ func (s *Server) institutionsInBox(ctx context.Context, box [4]float64, limit in
 }
 
 // institutionsByName matches the way the name was typed, not the way it is
-// written in OpenStreetMap. Every word has to occur, in any order and in any
-// part of the name, with punctuation and umlauts folded away by search_name:
+// written in OpenStreetMap. Every word has to occur, in any order, in the name
+// or the address, with punctuation and umlauts folded away by search_name:
 // "bergschule egidien" and "Bergschule St Egidien" both have to reach
-// "Bergschule St. Egidien", because nobody types the full stop.
+// "Bergschule St. Egidien", because nobody types the full stop — and "werdau"
+// has to reach a school whose name does not say where it is.
 const institutionsByWord = `
 	WITH words AS (
 		SELECT array_agg('%' || word || '%') AS patterns
@@ -119,16 +120,20 @@ const institutionsByWord = `
 		WHERE word <> ''
 	)
 	SELECT ` + institutionColumns + ` FROM institutions, words
-	WHERE name IS NOT NULL AND search_name(name) LIKE ALL (words.patterns)
+	WHERE name IS NOT NULL AND search_text LIKE ALL (words.patterns)
 	ORDER BY length(name), name LIMIT $2`
 
 // A misspelled word matches none of the above, and an empty page is a worse
 // answer than a close one. Ordered by how close, so the guess stays visible as
-// a guess.
+// a guess. The name is compared on its own as well: the address makes the
+// stored text longer, and a typo in a short name would otherwise drown in it.
 const institutionsBySimilarity = `
 	SELECT ` + institutionColumns + ` FROM institutions
-	WHERE name IS NOT NULL AND search_name(name) % search_name($1)
-	ORDER BY similarity(search_name(name), search_name($1)) DESC, length(name), name
+	WHERE name IS NOT NULL
+	  AND (search_name(name) % search_name($1) OR search_text % search_name($1))
+	ORDER BY greatest(similarity(search_name(name), search_name($1)),
+	                  similarity(search_text, search_name($1))) DESC,
+	         length(name), name
 	LIMIT $2`
 
 func (s *Server) institutionsByName(ctx context.Context, name string, limit int) ([]Institution, error) {
