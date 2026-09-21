@@ -1,0 +1,38 @@
+# A tag v* becomes a GitHub release. The images for it are built by images.yml
+# from the same tag; this only writes the release entry that points at them.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      # The section of CHANGELOG.md for this version, if there is one; the
+      # generated notes list the pull requests either way.
+      - name: Collect the changelog section
+        id: notes
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          awk -v v="$version" '
+            /^## / { on = index($0, "[" v "]") > 0 || index($0, " " v " ") > 0 || $0 ~ ("^## " v "$") }
+            on { print }
+          ' CHANGELOG.md > notes.md || true
+          echo "lines=$(wc -l < notes.md)" >> "$GITHUB_OUTPUT"
+
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [[ "${{ steps.notes.outputs.lines }}" -gt 1 ]]; then
+            gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file notes.md --generate-notes
+          else
+            gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --generate-notes
+          fi

@@ -1,0 +1,76 @@
+# The same ./run-tests.sh that runs locally and before every push, on a hosted
+# runner. Nothing here decides what is tested; that lives in the script.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
+          cache: npm
+          cache-dependency-path: |
+            frontend/package-lock.json
+            e2e/package-lock.json
+
+      # The browser download is the slowest single step; it changes only when
+      # Playwright does, so it is keyed on the lockfile that pins it.
+      - uses: actions/cache@v4
+        id: browsers
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('e2e/package-lock.json') }}
+
+      - name: Install the e2e suite and its browser
+        working-directory: e2e
+        run: |
+          npm ci
+          # --with-deps: the runner image is not guaranteed to carry the
+          # libraries Chromium needs, and run.sh installs without them.
+          npx playwright install --with-deps chromium
+
+      - name: Install the frontend
+        working-directory: frontend
+        run: npm ci
+
+      - run: ./run-tests.sh
+
+      # The report is what explains a red run; the screenshots inside it are
+      # the only way to see what the browser saw.
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            e2e/playwright-report
+            e2e/test-results
+          retention-days: 14
+
+      # run-tests.sh and run.sh tear their stacks down on exit, but a job that
+      # was cancelled mid-way never reaches their traps.
+      - name: Tear down whatever is left
+        if: always()
+        run: |
+          docker compose -f deploy/docker-compose.test.yml down -v --remove-orphans || true
+          docker compose -f deploy/docker-compose.yml -p "ssk-$(( $(cksum <<< "$PWD" | cut -d' ' -f1) % 200 ))-e2e" down -v --remove-orphans || true

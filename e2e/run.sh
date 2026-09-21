@@ -23,7 +23,13 @@ cleanup() {
 trap cleanup EXIT
 
 echo "   starting the stack on web:$WEB_PORT api:$API_PORT"
-$COMPOSE up -d --wait --build
+if [[ -n "${E2E_PULL:-}" ]]; then
+  # The nightly run: what a server pulls from the registry, not a fresh build.
+  $COMPOSE --profile tools pull --quiet
+  $COMPOSE up -d --wait --pull never
+else
+  $COMPOSE up -d --wait --build
+fi
 
 echo "   seeding"
 $COMPOSE exec -T postgres psql -v ON_ERROR_STOP=1 -q -U "${POSTGRES_USER:-ssk}" -d "${POSTGRES_DB:-ssk}" < seed.sql
