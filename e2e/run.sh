@@ -4,7 +4,8 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-COMPOSE="docker compose -f ../deploy/docker-compose.yml -p ${COMPOSE_PROJECT_NAME:-ssk}-e2e"
+PROJECT="${COMPOSE_PROJECT_NAME:-ssk}-e2e"
+COMPOSE="docker compose -f ../deploy/docker-compose.yml -p $PROJECT"
 
 # Its own ports, so an e2e run does not collide with a stack somebody left
 # running, or with the database the Go tests use.
@@ -29,6 +30,18 @@ $COMPOSE exec -T postgres psql -v ON_ERROR_STOP=1 -q -U "${POSTGRES_USER:-ssk}" 
 # The hotspots are computed by the importer rather than seeded, so the suite
 # exercises the real clustering instead of numbers somebody typed in.
 $COMPOSE run --rm importer hotspots
+
+WEB="http://127.0.0.1:$WEB_PORT"
+./deployment-checks.sh "$COMPOSE" "$WEB" "$PROJECT"
+
+# The journeys run against a stack that has been stopped and started again:
+# what they see then has survived a restart, which is what the named volume
+# is for. `down` without -v keeps it.
+echo "   deployment: restarting the stack"
+$COMPOSE down > /dev/null
+$COMPOSE up -d --wait
+count=$(curl -sf "$WEB/api/extent" | sed -n 's/.*"institutions":\([0-9]*\).*/\1/p')
+[[ "$count" == "3" ]] || { echo "❌ after a restart the API knows $count institutions, expected 3" >&2; exit 1; }
 
 [[ -d node_modules ]] || npm ci
 npx playwright install --no-shell chromium > /dev/null
