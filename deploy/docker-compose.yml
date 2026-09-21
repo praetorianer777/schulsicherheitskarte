@@ -79,6 +79,13 @@ services:
     depends_on:
       api:
         condition: service_healthy
+    healthcheck:
+      # Through nginx to the API: healthy means the path a browser takes works,
+      # not just that a process listens. busybox wget is what the image has.
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
     restart: unless-stopped
 
   # Not started by `up`: imports are run on demand with

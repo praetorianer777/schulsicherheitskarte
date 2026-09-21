@@ -60,8 +60,9 @@ alles läuft:
 docker compose -f deploy/docker-compose.yml ps
 ```
 
-Beide Dienste müssen `healthy` melden. Der Dienst `migrate` ist ein Job und erscheint als
-beendet — das ist richtig so.
+`postgres`, `api` und `web` müssen `healthy` melden. Der Dienst `migrate` ist ein Job und
+erscheint als beendet — das ist richtig so. `web` gilt erst als gesund, wenn es die API
+durch nginx hindurch erreicht — also dann, wenn der Weg funktioniert, den ein Browser nimmt.
 
 ## 3. Daten importieren
 
@@ -299,4 +300,3 @@ den Kasten in Abschnitt 2.
 - TLS und ein vorgelagerter Webserver
 - Impressum und Datenschutzerklärung — bei einem öffentlich erreichbaren Angebot in
   Deutschland Pflicht
-- die Prüfungen aus #20, die genau dieses Deployment automatisch testen
