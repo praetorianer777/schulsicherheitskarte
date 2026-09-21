@@ -21,24 +21,6 @@ async function withoutBasemap(page: Page) {
   );
 }
 
-/** How many pixels of the map carry the accident colour. */
-async function accidentPixels(page: Page): Promise<number> {
-  const shot = await page.getByRole("region", { name: /Karte der Umgebung/ }).screenshot();
-  const png = PNG.sync.read(shot);
-  let count = 0;
-  for (let i = 0; i < png.data.length; i += 4) {
-    const near = (value: number, want: number) => Math.abs(value - want) <= 12;
-    if (
-      near(png.data[i], accidentColour.r) &&
-      near(png.data[i + 1], accidentColour.g) &&
-      near(png.data[i + 2], accidentColour.b)
-    ) {
-      count += 1;
-    }
-  }
-  return count;
-}
-
 async function openSchool(page: Page) {
   await page.goto("/");
   await page.getByLabel("Schule oder Kita suchen").fill("egidien");
@@ -47,7 +29,42 @@ async function openSchool(page: Page) {
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Grundschule St. Egidien");
 }
 
+// The institution colour from the same palette.
+const institutionColour = { r: 0x0b, g: 0x0b, b: 0x0b };
+
+/** How many pixels of the given element carry the colour. */
+async function pixelsOf(
+  page: Page,
+  selector: ReturnType<Page["locator"]>,
+  colour: { r: number; g: number; b: number },
+): Promise<number> {
+  const png = PNG.sync.read(await selector.screenshot());
+  let count = 0;
+  for (let i = 0; i < png.data.length; i += 4) {
+    const near = (value: number, want: number) => Math.abs(value - want) <= 12;
+    if (near(png.data[i], colour.r) && near(png.data[i + 1], colour.g) && near(png.data[i + 2], colour.b)) {
+      count += 1;
+    }
+  }
+  return count;
+}
+
+async function accidentPixels(page: Page): Promise<number> {
+  return pixelsOf(page, page.getByRole("region", { name: /Karte der Umgebung/ }), accidentColour);
+}
+
 test.describe("Karte im gebauten Image", () => {
+  // The start page opens on the map. The zoom controls are dark too, so only
+  // the canvas is photographed, not the region around it.
+  test("die Startseite zeigt die Einrichtungen auf der Karte", async ({ page }) => {
+    await withoutBasemap(page);
+    await page.goto("/");
+    await expect(page.getByRole("region", { name: /Karte der Region/ })).toBeVisible();
+
+    const canvas = page.locator("canvas.maplibregl-canvas").first();
+    await expect.poll(() => pixelsOf(page, canvas, institutionColour), { timeout: 15_000 }).toBeGreaterThan(30);
+  });
+
   // The map used to draw the basemap and the radius ring and nothing else:
   // everything that arrived while MapLibre was still assembling itself was
   // dropped. Every test stayed green, because they all looked at the list and

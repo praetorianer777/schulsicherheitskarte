@@ -64,6 +64,7 @@ func (s *Server) router() *chi.Mux {
 	r.NotFound(s.notFound)
 
 	r.Route("/api", func(r chi.Router) {
+		r.Get("/extent", s.extent)
 		r.Get("/institutions", s.searchInstitutions)
 		r.Route("/institutions/{id}", func(r chi.Router) {
 			r.Get("/", s.institution)

@@ -8,11 +8,13 @@ import { vi } from "vitest";
 export const calls: {
   flyTo: unknown[];
   jumpTo: unknown[];
+  fitBounds: unknown[];
   layout: unknown[];
   data: { source: string; features: unknown[] }[];
 } = {
   flyTo: [],
   jumpTo: [],
+  fitBounds: [],
   layout: [],
   data: [],
 };
@@ -46,6 +48,7 @@ export function resetCalls() {
   heldHandlers = [];
   calls.flyTo.length = 0;
   calls.jumpTo.length = 0;
+  calls.fitBounds.length = 0;
   calls.layout.length = 0;
   calls.data.length = 0;
 }
@@ -58,14 +61,30 @@ class StubSource {
   };
 }
 
+/** The view a stub map reports; tests move it with `moveStubMap`. */
+let bounds = { west: 12.2, south: 50.5, east: 12.8, north: 50.9 };
+
+export function moveStubMap(next: typeof bounds) {
+  bounds = next;
+  for (const instance of instances) instance.fire("moveend");
+}
+
+const instances: Map[] = [];
+
 export class Map {
   private sources: Record<string, StubSource> = {};
-  private handlers: Record<string, () => void> = {};
+  private handlers: Record<string, (event?: unknown) => void> = {};
 
-  constructor(_options: unknown) {}
+  constructor(_options: unknown) {
+    instances.push(this);
+  }
+
+  fire = (event: string, payload?: unknown) => this.handlers[event]?.(payload);
 
   addControl = vi.fn();
-  on = (event: string, handler: () => void) => {
+  on = (event: string, layerOrHandler: unknown, maybeHandler?: (event?: unknown) => void) => {
+    // Layer-scoped listeners pass the layer id first.
+    const handler = (maybeHandler ?? layerOrHandler) as (event?: unknown) => void;
     this.handlers[event] = handler;
     // A browser fires load after the current task, never from inside on().
     // Firing it synchronously made the map ready before the first effect ever
@@ -83,7 +102,21 @@ export class Map {
   setLayoutProperty = (...args: unknown[]) => calls.layout.push(args);
   flyTo = (...args: unknown[]) => calls.flyTo.push(args);
   jumpTo = (...args: unknown[]) => calls.jumpTo.push(args);
-  remove = vi.fn();
+  fitBounds = (...args: unknown[]) => calls.fitBounds.push(args);
+  easeTo = vi.fn();
+  getZoom = () => 10;
+  getCanvas = () => ({ style: {} as CSSStyleDeclaration });
+  queryRenderedFeatures = () => [];
+  getBounds = () => ({
+    getWest: () => bounds.west,
+    getSouth: () => bounds.south,
+    getEast: () => bounds.east,
+    getNorth: () => bounds.north,
+  });
+  remove = () => {
+    const at = instances.indexOf(this);
+    if (at >= 0) instances.splice(at, 1);
+  };
 }
 
 export class NavigationControl {

@@ -17,6 +17,20 @@ test.describe("Suche", () => {
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Grundschule St. Egidien");
   });
 
+  test("ein Treffer lässt sich auf der Karte zeigen", async ({ page }) => {
+    await page.goto("/");
+    await page.getByLabel("Schule oder Kita suchen").fill("egidien");
+    await page.getByRole("button", { name: "Suchen" }).click();
+
+    const show = page.getByRole("button", { name: "Auf der Karte zeigen" }).first();
+    await show.focus();
+    await expect(show).toBeFocused();
+    await page.keyboard.press("Enter");
+    // The map is a canvas; what can be checked is that the page stayed intact
+    // and the link beside the button still leads where it says.
+    await expect(page.getByRole("link", { name: /Grundschule St. Egidien/ })).toBeVisible();
+  });
+
   test("erklärt einen leeren Treffer statt stumm zu bleiben", async ({ page }) => {
     await page.goto("/");
     await page.getByLabel("Schule oder Kita suchen").fill("gibtesnichtxyz");

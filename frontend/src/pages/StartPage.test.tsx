@@ -6,20 +6,71 @@ import StartPage from "./StartPage";
 import { axe, renderApp } from "../test/render";
 import { describeViolations } from "../test/axe";
 import { school } from "../test/fixtures";
+import { calls, moveStubMap, resetCalls, sourceData } from "../test/stubs/maplibre";
 
-function respondWith(body: unknown, ok = true, status = 200) {
-  return vi.fn().mockResolvedValue({
-    ok,
-    status,
-    json: async () => body,
-  } as Response);
+const region = { bbox: [12.2263668, 50.54656, 12.8061082, 50.9242066], institutions: 3 };
+
+/** Answers the extent with the region and everything else with `body`. */
+function respondWith(body: unknown, ok = true, status = 200, extent: unknown = region) {
+  return vi.fn(async (input: RequestInfo | URL) => {
+    const url = String(input);
+    const answer = url.includes("/extent") ? extent : body;
+    return { ok, status, json: async () => answer } as Response;
+  });
 }
 
 describe("Startseite", () => {
   beforeEach(() => {
+    resetCalls();
     vi.stubGlobal("fetch", respondWith({ institutions: [school], sources: [] }));
   });
   afterEach(() => vi.unstubAllGlobals());
+
+  it("öffnet die Karte auf dem importierten Gebiet", async () => {
+    renderApp(<StartPage />);
+    const map = await screen.findByRole("region", { name: /Karte der Region/ });
+    expect(map).toBeInTheDocument();
+    // What is in view comes from the map's own bounds, not from the search.
+    await waitFor(() => expect(sourceData("institutions")).toHaveLength(1));
+  });
+
+  it("lädt nach, was beim Verschieben in den Ausschnitt kommt", async () => {
+    renderApp(<StartPage />);
+    await screen.findByRole("region", { name: /Karte der Region/ });
+    await waitFor(() => expect(sourceData("institutions")).toHaveLength(1));
+
+    const fetchMock = globalThis.fetch as ReturnType<typeof vi.fn>;
+    const before = fetchMock.mock.calls.length;
+    moveStubMap({ west: 12.4, south: 50.6, east: 12.5, north: 50.7 });
+    await waitFor(() => expect(fetchMock.mock.calls.length).toBeGreaterThan(before));
+    const last = String(fetchMock.mock.calls.at(-1)?.[0]);
+    expect(last).toContain("bbox=12.4");
+  });
+
+  it("ein Treffer zoomt die Karte dorthin", async () => {
+    const user = userEvent.setup();
+    renderApp(<StartPage />);
+    await screen.findByRole("region", { name: /Karte der Region/ });
+
+    await user.type(screen.getByLabelText("Schule oder Kita suchen"), "breuer");
+    await user.click(screen.getByRole("button", { name: "Suchen" }));
+    await screen.findByRole("link", { name: /Peter Breuer/ });
+
+    await waitFor(() => expect(calls.flyTo.length + calls.jumpTo.length).toBeGreaterThan(0));
+    const target = (calls.flyTo[0] ?? calls.jumpTo[0]) as [{ center: [number, number] }];
+    expect(target[0].center).toEqual([school.lon, school.lat]);
+  });
+
+  it("meldet die leere Datenbank statt einer leeren Karte", async () => {
+    vi.stubGlobal(
+      "fetch",
+      respondWith({ institutions: [], sources: [] }, true, 200, { bbox: null, institutions: 0 }),
+    );
+    renderApp(<StartPage />);
+    expect(await screen.findByText(/noch keine Daten importiert/)).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: /Karte der Region/ })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Schule oder Kita suchen")).not.toBeInTheDocument();
+  });
 
   it("findet eine Schule über das Suchfeld", async () => {
     const user = userEvent.setup();
@@ -71,7 +122,7 @@ describe("Startseite", () => {
     await user.type(screen.getByLabelText("Schule oder Kita suchen"), "grundschule");
     await user.click(screen.getByRole("button", { name: "Suchen" }));
 
-    expect(await screen.findByText(/noch keine Daten importiert/)).toBeInTheDocument();
+    expect(await screen.findByText(/noch keine Daten importiert, deshalb/)).toBeInTheDocument();
     expect(screen.queryByText(/wurde nichts gefunden/)).not.toBeInTheDocument();
   });
 

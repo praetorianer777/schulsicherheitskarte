@@ -6,6 +6,7 @@ import type {
   ApiError,
   HotspotList,
   InfrastructureList,
+  Extent,
   InstitutionDetail,
   InstitutionList,
 } from "./types";
@@ -83,6 +84,11 @@ export type AccidentFilter = {
 export const api = {
   searchInstitutions: (q: string) =>
     request<InstitutionList>("/api/institutions", { q, limit: 25 }),
+
+  extent: () => request<Extent>("/api/extent", {}),
+
+  institutionsInView: (bbox: [number, number, number, number]) =>
+    request<InstitutionList>("/api/institutions", { bbox: bbox.join(","), limit: 500 }),
 
   institution: (id: number) => request<InstitutionDetail>(`/api/institutions/${id}`, {}),
 
