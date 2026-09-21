@@ -67,6 +67,12 @@ export type Infrastructure = {
   distance: number;
 };
 
+/** Where the imported institutions are; bbox is null on an empty database. */
+export type Extent = {
+  bbox: [number, number, number, number] | null;
+  institutions: number;
+};
+
 export type InstitutionList = {
   institutions: Institution[];
   // Set when the list is empty because nothing has been imported yet, rather

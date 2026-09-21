@@ -640,3 +640,31 @@ func TestSearchFindsASchoolByItsTown(t *testing.T) {
 		}
 	}
 }
+
+func TestExtentCoversEveryInstitution(t *testing.T) {
+	f := seed(t)
+	var e api.Extent
+	if status := f.get(t, "/api/extent", &e); status != http.StatusOK {
+		t.Fatalf("status = %d", status)
+	}
+	if e.Institutions != 2 || e.BBox == nil {
+		t.Fatalf("extent = %+v", e)
+	}
+	// The school and the kindergarten 0.01° apart span the box.
+	box := *e.BBox
+	if box[0] != schoolLon || box[2] < schoolLon+0.009 || box[1] != schoolLat || box[3] != schoolLat {
+		t.Errorf("bbox = %v", box)
+	}
+}
+
+func TestExtentOfAnEmptyDatabaseIsNotABox(t *testing.T) {
+	f := seed(t)
+	dbtest.Truncate(t, f.pool, "institutions")
+	var e api.Extent
+	if status := f.get(t, "/api/extent", &e); status != http.StatusOK {
+		t.Fatalf("status = %d", status)
+	}
+	if e.Institutions != 0 || e.BBox != nil {
+		t.Errorf("extent = %+v, expected no box and no institutions", e)
+	}
+}
