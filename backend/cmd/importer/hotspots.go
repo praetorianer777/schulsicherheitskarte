@@ -44,5 +44,7 @@ func recomputeHotspots(ctx context.Context, args []string) error {
 
 	log.Printf("%d accidents clustered into %d hotspots, counting back from reporting year %d",
 		result.Accidents, result.Hotspots, result.Reference)
+	log.Printf("%d institutions: accidents within %d m counted for the overview",
+		result.Institutions, scoring.NearbyRadiusMetres)
 	return nil
 }

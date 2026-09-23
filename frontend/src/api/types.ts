@@ -7,6 +7,8 @@ export type Institution = {
   kind: "school" | "kindergarten";
   name: string | null;
   schoolType?: string;
+  /** Accidents within 500 m over every imported year; null until counted. */
+  accidentsNearby?: number | null;
   lon: number;
   lat: number;
   osmType: string;

@@ -10,9 +10,10 @@ import (
 )
 
 type Result struct {
-	Accidents int
-	Hotspots  int
-	Reference int // the reporting year the recency weighting counts back from
+	Accidents    int
+	Hotspots     int
+	Institutions int // institutions whose accidents_nearby was counted
+	Reference    int // the reporting year the recency weighting counts back from
 }
 
 // The projection the clustering runs in. Accidents are stored as geography in
@@ -50,10 +51,33 @@ func RecomputeHotspots(ctx context.Context, pool *pgxpool.Pool) (*Result, error)
 		return nil, err
 	}
 
+	counted, err := countAccidentsNearby(ctx, tx)
+	if err != nil {
+		return nil, err
+	}
+
 	if err := tx.Commit(ctx); err != nil {
 		return nil, err
 	}
-	return &Result{Accidents: len(accidents), Hotspots: len(hotspots), Reference: reference}, nil
+	return &Result{
+		Accidents: len(accidents), Hotspots: len(hotspots), Institutions: counted, Reference: reference,
+	}, nil
+}
+
+// countAccidentsNearby stores, for every institution, the accidents within
+// NearbyRadiusMetres. It runs with the hotspots because both are statements
+// about the accident data as a whole and go stale at the same moment: when a
+// new reporting year is imported.
+func countAccidentsNearby(ctx context.Context, tx pgx.Tx) (int, error) {
+	const q = `
+		UPDATE institutions i SET accidents_nearby = (
+			SELECT count(*) FROM accidents a WHERE ST_DWithin(a.geom, i.geom, $1)
+		)`
+	tag, err := tx.Exec(ctx, q, NearbyRadiusMetres)
+	if err != nil {
+		return 0, fmt.Errorf("count accidents near institutions: %w", err)
+	}
+	return int(tag.RowsAffected()), nil
 }
 
 func loadAccidents(ctx context.Context, tx pgx.Tx) ([]Accident, int, error) {

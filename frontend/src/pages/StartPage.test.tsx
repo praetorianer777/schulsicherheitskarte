@@ -61,6 +61,80 @@ describe("Startseite", () => {
     expect(target[0].center).toEqual([school.lon, school.lat]);
   });
 
+  it("nennt in jedem Treffer die Unfälle im Umkreis", async () => {
+    vi.stubGlobal(
+      "fetch",
+      respondWith({
+        institutions: [
+          { ...school, accidentsNearby: 12 },
+          { ...school, id: 276, name: "Neue Grundschule", accidentsNearby: null },
+        ],
+        sources: [],
+      }),
+    );
+    const user = userEvent.setup();
+    renderApp(<StartPage />);
+
+    await user.type(screen.getByLabelText("Schule oder Kita suchen"), "schule");
+    await user.click(screen.getByRole("button", { name: "Suchen" }));
+
+    expect(await screen.findByRole("link", { name: /Peter Breuer/ })).toHaveTextContent(
+      "12 Unfälle im Umkreis von 500 m",
+    );
+    // Not counted is not zero.
+    expect(screen.getByRole("link", { name: /Neue Grundschule/ })).toHaveTextContent(
+      "noch nicht gezählt",
+    );
+  });
+
+  it("die Punkte tragen ihre Zahl, ein nicht gezählter Punkt keine", async () => {
+    vi.stubGlobal(
+      "fetch",
+      respondWith({
+        institutions: [
+          { ...school, accidentsNearby: 7 },
+          { ...school, id: 276, accidentsNearby: null },
+        ],
+        sources: [],
+      }),
+    );
+    renderApp(<StartPage />);
+
+    await waitFor(() => expect(sourceData("institutions")).toHaveLength(2));
+    const nearby = (sourceData("institutions") as { properties: { nearby: number } }[]).map(
+      (feature) => feature.properties.nearby,
+    );
+    expect(nearby).toEqual([7, -1]);
+  });
+
+  // An inner-city school has more accidents around it because more traffic
+  // passes it. Without saying so, the map ranks schools by their address.
+  it("die Legende sagt, was die Zahl ist und was nicht", async () => {
+    renderApp(<StartPage />);
+    const legend = await screen.findByRole("region", { name: "Zeichenerklärung" });
+
+    expect(legend).toHaveTextContent("Unfälle mit Personenschaden im Umkreis von 500 m");
+    expect(legend).toHaveTextContent("ohne Verkehrsmengen");
+    expect(legend).toHaveTextContent("40 und mehr");
+  });
+
+  it("die Punkte lassen sich wieder alle gleich zeigen", async () => {
+    const user = userEvent.setup();
+    renderApp(<StartPage />);
+    const toggle = await screen.findByRole("checkbox", {
+      name: "Punkte nach Unfällen im Umkreis zeigen",
+    });
+    expect(toggle).toBeChecked();
+
+    await user.click(toggle);
+
+    await waitFor(() => {
+      const colour = calls.paint.filter((call) => (call as unknown[])[1] === "circle-color").at(-1);
+      expect(colour).toEqual(["institution-points", "circle-color", "#0b0b0b"]);
+    });
+    expect(screen.queryByText(/ohne Verkehrsmengen/)).not.toBeInTheDocument();
+  });
+
   it("meldet die leere Datenbank statt einer leeren Karte", async () => {
     vi.stubGlobal(
       "fetch",

@@ -10,12 +10,14 @@ export const calls: {
   jumpTo: unknown[];
   fitBounds: unknown[];
   layout: unknown[];
+  paint: unknown[];
   data: { source: string; features: unknown[] }[];
 } = {
   flyTo: [],
   jumpTo: [],
   fitBounds: [],
   layout: [],
+  paint: [],
   data: [],
 };
 
@@ -50,6 +52,7 @@ export function resetCalls() {
   calls.jumpTo.length = 0;
   calls.fitBounds.length = 0;
   calls.layout.length = 0;
+  calls.paint.length = 0;
   calls.data.length = 0;
 }
 
@@ -100,6 +103,7 @@ export class Map {
   addLayer = vi.fn();
   getLayer = () => ({});
   setLayoutProperty = (...args: unknown[]) => calls.layout.push(args);
+  setPaintProperty = (...args: unknown[]) => calls.paint.push(args);
   flyTo = (...args: unknown[]) => calls.flyTo.push(args);
   jumpTo = (...args: unknown[]) => calls.jumpTo.push(args);
   fitBounds = (...args: unknown[]) => calls.fitBounds.push(args);
@@ -124,4 +128,14 @@ export class NavigationControl {
 }
 
 export type GeoJSONSource = StubSource;
-export default { Map, NavigationControl };
+
+export class Popup {
+  constructor(_options?: unknown) {}
+  setLngLat = () => this;
+  setText = () => this;
+  addTo = () => this;
+  remove = () => this;
+}
+
+export default { Map, NavigationControl, Popup };
+

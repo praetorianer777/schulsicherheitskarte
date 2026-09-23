@@ -29,8 +29,11 @@ async function openSchool(page: Page) {
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Grundschule St. Egidien");
 }
 
-// The institution colour from the same palette.
+// The institution colour from the same palette, and two steps of the
+// overview's ramp.
 const institutionColour = { r: 0x0b, g: 0x0b, b: 0x0b };
+const nearbyNone = { r: 0xa0, g: 0x7c, b: 0xdb };
+const nearbyFiveToFourteen = { r: 0x68, g: 0x44, b: 0x9c };
 
 /** How many pixels of the given element carry the colour. */
 async function pixelsOf(
@@ -54,15 +57,30 @@ async function accidentPixels(page: Page): Promise<number> {
 }
 
 test.describe("Karte im gebauten Image", () => {
-  // The start page opens on the map. The zoom controls are dark too, so only
-  // the canvas is photographed, not the region around it.
-  test("die Startseite zeigt die Einrichtungen auf der Karte", async ({ page }) => {
+  // The start page opens on the map, each point drawn by the accidents within
+  // 500 m. The seed puts six around the Grundschule and none around the other
+  // two, so two steps of the ramp have to be on the canvas. The zoom controls
+  // are dark too, so only the canvas is photographed, not the region around it.
+  test("die Startseite zeigt die Einrichtungen nach Unfällen im Umkreis", async ({ page }) => {
     await withoutBasemap(page);
     await page.goto("/");
     await expect(page.getByRole("region", { name: /Karte der Region/ })).toBeVisible();
 
     const canvas = page.locator("canvas.maplibregl-canvas").first();
-    await expect.poll(() => pixelsOf(page, canvas, institutionColour), { timeout: 15_000 }).toBeGreaterThan(30);
+    await expect.poll(() => pixelsOf(page, canvas, nearbyFiveToFourteen), { timeout: 15_000 }).toBeGreaterThan(20);
+    await expect.poll(() => pixelsOf(page, canvas, nearbyNone)).toBeGreaterThan(20);
+  });
+
+  test("die ungewichtete Ansicht zeigt alle Einrichtungen gleich", async ({ page }) => {
+    await withoutBasemap(page);
+    await page.goto("/");
+    const canvas = page.locator("canvas.maplibregl-canvas").first();
+    await expect.poll(() => pixelsOf(page, canvas, nearbyFiveToFourteen), { timeout: 15_000 }).toBeGreaterThan(20);
+
+    await page.getByRole("checkbox", { name: "Punkte nach Unfällen im Umkreis zeigen" }).uncheck();
+
+    await expect.poll(() => pixelsOf(page, canvas, nearbyFiveToFourteen)).toBe(0);
+    await expect.poll(() => pixelsOf(page, canvas, institutionColour)).toBeGreaterThan(30);
   });
 
   // The map used to draw the basemap and the radius ring and nothing else:

@@ -29,6 +29,10 @@ if [[ -n "${E2E_PULL:-}" ]]; then
   $COMPOSE up -d --wait --pull never
 else
   $COMPOSE up -d --wait --build
+  # The importer sits in the tools profile, which `up` leaves out. Without
+  # building it here, `run importer` below takes whatever image is lying around
+  # — one pulled days ago — and a change to the importer is never exercised.
+  $COMPOSE --profile tools build --quiet importer
 fi
 
 echo "   seeding"
