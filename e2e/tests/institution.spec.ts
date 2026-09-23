@@ -1,12 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-async function openSchool(page: Page) {
-  await page.goto("/");
-  await page.getByLabel("Schule oder Kita suchen").fill("egidien");
-  await page.getByRole("button", { name: "Suchen" }).click();
-  await page.getByRole("link", { name: /Grundschule St. Egidien/ }).click();
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Grundschule St. Egidien");
-}
+import { openSchool } from "./support";
 
 /** The figure under one of the key-figure labels. */
 function figure(page: Page, label: string) {

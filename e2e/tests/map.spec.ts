@@ -1,56 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
-import { PNG } from "pngjs";
 
-// The accident colour from frontend/src/lib/palette.ts. The check below is
-// about what is on the screen, so it has to name the colour the user sees.
-const accidentColour = { r: 0xd0, g: 0x3b, b: 0x3b };
-
-// A style with nothing in it. The real basemap comes from an external service,
-// and whether our own points are drawn must not depend on somebody else being
-// up — nor should this test fail on the day they redesign their map.
-const emptyStyle = {
-  version: 8,
-  sources: {},
-  layers: [{ id: "background", type: "background", paint: { "background-color": "#ffffff" } }],
-  glyphs: "https://example.invalid/{fontstack}/{range}.pbf",
-};
-
-async function withoutBasemap(page: Page) {
-  await page.route("https://sgx.geodatenzentrum.de/**", (route) =>
-    route.fulfill({ json: emptyStyle }),
-  );
-}
-
-async function openSchool(page: Page) {
-  await page.goto("/");
-  await page.getByLabel("Schule oder Kita suchen").fill("egidien");
-  await page.getByRole("button", { name: "Suchen" }).click();
-  await page.getByRole("link", { name: /Grundschule St. Egidien/ }).click();
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Grundschule St. Egidien");
-}
-
-// The institution colour from the same palette.
-const institutionColour = { r: 0x0b, g: 0x0b, b: 0x0b };
-
-/** How many pixels of the given element carry the colour. */
-async function pixelsOf(
-  page: Page,
-  selector: ReturnType<Page["locator"]>,
-  colour: { r: number; g: number; b: number },
-): Promise<number> {
-  const png = PNG.sync.read(await selector.screenshot());
-  let count = 0;
-  for (let i = 0; i < png.data.length; i += 4) {
-    const near = (value: number, want: number) => Math.abs(value - want) <= 12;
-    if (near(png.data[i], colour.r) && near(png.data[i + 1], colour.g) && near(png.data[i + 2], colour.b)) {
-      count += 1;
-    }
-  }
-  return count;
-}
+import { colours, openSchool, pixelsOf, surroundingsMap, withoutBasemap } from "./support";
 
 async function accidentPixels(page: Page): Promise<number> {
-  return pixelsOf(page, page.getByRole("region", { name: /Karte der Umgebung/ }), accidentColour);
+  return pixelsOf(surroundingsMap(page), colours.accident);
 }
 
 test.describe("Karte im gebauten Image", () => {
@@ -62,7 +15,7 @@ test.describe("Karte im gebauten Image", () => {
     await expect(page.getByRole("region", { name: /Karte der Region/ })).toBeVisible();
 
     const canvas = page.locator("canvas.maplibregl-canvas").first();
-    await expect.poll(() => pixelsOf(page, canvas, institutionColour), { timeout: 15_000 }).toBeGreaterThan(30);
+    await expect.poll(() => pixelsOf(canvas, colours.institution), { timeout: 15_000 }).toBeGreaterThan(30);
   });
 
   // The map used to draw the basemap and the radius ring and nothing else:
