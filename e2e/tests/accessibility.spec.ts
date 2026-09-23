@@ -1,6 +1,8 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
+import { openSchool } from "./support";
+
 /**
  * axe catches regressions — a missing label, a heading level skipped, a control
  * nobody can reach. It does not replace testing with a keyboard and a screen
@@ -37,6 +39,32 @@ test("die Einrichtungsseite hat keine Verstöße", async ({ page }) => {
   await page.getByRole("link", { name: /Grundschule St. Egidien/ }).click();
   await expect(page.getByRole("heading", { name: "Unfallschwerpunkte" })).toBeVisible();
 
+  expect(await violationsOn(page)).toEqual([]);
+});
+
+test("das offene Meldeformular hat keine Verstöße", async ({ page }) => {
+  await openSchool(page);
+  await page.getByRole("button", { name: /Gefahrenstelle melden/ }).click();
+  await expect(page.getByRole("button", { name: "Meldung abschicken" })).toBeVisible();
+
+  expect(await violationsOn(page)).toEqual([]);
+});
+
+test("das Faktenblatt hat keine Verstöße", async ({ page }) => {
+  await openSchool(page);
+  await page.getByRole("link", { name: "Faktenblatt zum Ausdrucken" }).click();
+  await expect(page.getByRole("heading", { name: "Wie der Gefahrenindex berechnet wird" })).toBeVisible();
+
+  expect(await violationsOn(page)).toEqual([]);
+});
+
+test("die Moderation hat keine Verstöße", async ({ page }) => {
+  await page.goto("/moderation");
+  expect(await violationsOn(page)).toEqual([]);
+
+  await page.getByLabel("Moderations-Token").fill("e2e-moderation-token");
+  await page.getByRole("button", { name: "Warteschlange öffnen" }).click();
+  await expect(page.getByText(/Warteschlange ist leer|Freigeben/).first()).toBeVisible();
   expect(await violationsOn(page)).toEqual([]);
 });
 
