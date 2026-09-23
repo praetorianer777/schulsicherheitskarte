@@ -42,7 +42,14 @@ type element struct {
 	Center   *Point            `json:"-"`
 	RawCentr json.RawMessage   `json:"center"`
 	Geometry []geoPoint        `json:"geometry"`
+	Members  []member          `json:"members"`
 	Tags     map[string]string `json:"tags"`
+}
+
+type member struct {
+	Type     string     `json:"type"`
+	Role     string     `json:"role"`
+	Geometry []geoPoint `json:"geometry"`
 }
 
 type geoPoint struct {

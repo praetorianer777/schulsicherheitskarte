@@ -107,6 +107,7 @@ export default function StartPage() {
                           <span className="block font-medium">{institutionName(institution)}</span>
                           <span className="block text-sm text-ink-muted">
                             {kindLabel[institution.kind]}
+                            {institution.town ? ` · ${institution.town}` : ""}
                           </span>
                         </Link>
                         <button

@@ -43,6 +43,10 @@ func importOSM(ctx context.Context, args []string) error {
 	client := osm.NewClient(*cacheDir)
 	for _, region := range regions.Regions {
 		box := osm.BBox(region.BBox)
+		// Before the institutions, so that each one is written with its town.
+		if err := importBoundaries(ctx, pool, client, region.Name, box, *offline); err != nil {
+			return err
+		}
 		if err := importInstitutions(ctx, pool, client, region.Name, box, *offline); err != nil {
 			return err
 		}
@@ -79,6 +83,42 @@ func importInstitutions(ctx context.Context, pool *pgxpool.Pool, client *osm.Cli
 	}
 	log.Printf("%s: %d schools and kindergartens written, %d gone from OpenStreetMap and removed",
 		region, result.Written, result.Pruned)
+
+	coverage, err := osm.CountTownCoverage(ctx, pool, box)
+	if err != nil {
+		return err
+	}
+	log.Printf("%s: %d of %d found by their town — %d by addr:city, %d only through the municipal boundaries; %d still without a town",
+		region, coverage.Address+coverage.Boundary, coverage.Total, coverage.Address, coverage.Boundary, coverage.None)
+	return nil
+}
+
+func importBoundaries(ctx context.Context, pool *pgxpool.Pool, client *osm.Client, region string, box osm.BBox, offline bool) error {
+	body, err := fetch(ctx, client, osm.QueryBoundaries, osm.BoundariesQuery(box), offline)
+	if err != nil {
+		return err
+	}
+
+	run, err := importrun.Start(ctx, pool, "osm", region+"/"+osm.QueryBoundaries)
+	if err != nil {
+		return err
+	}
+
+	items, err := osm.ParseBoundaries(body)
+	if err != nil {
+		_ = run.Finish(ctx, 0, 0, "", err)
+		return err
+	}
+	result, err := osm.ImportBoundaries(ctx, pool, items, box)
+	if err != nil {
+		_ = run.Finish(ctx, len(items), 0, "", err)
+		return err
+	}
+	if err := run.Finish(ctx, len(items), result.Written, "", nil); err != nil {
+		return err
+	}
+	log.Printf("%s: %d municipal and district boundaries written, %d removed, %d skipped because their ways do not close",
+		region, result.Written, result.Pruned, result.Broken)
 	return nil
 }
 

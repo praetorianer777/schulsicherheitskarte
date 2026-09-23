@@ -11,15 +11,18 @@ import (
 )
 
 type Institution struct {
-	ID         int64             `json:"id"`
-	Kind       string            `json:"kind"`
-	Name       *string           `json:"name"`
-	SchoolType *string           `json:"schoolType,omitempty"`
-	Lon        float64           `json:"lon"`
-	Lat        float64           `json:"lat"`
-	Tags       map[string]string `json:"tags,omitempty"`
-	OSMType    string            `json:"osmType"`
-	OSMID      int64             `json:"osmId"`
+	ID         int64   `json:"id"`
+	Kind       string  `json:"kind"`
+	Name       *string `json:"name"`
+	SchoolType *string `json:"schoolType,omitempty"`
+	// Town is addr:city where OpenStreetMap has one, and otherwise the
+	// municipality the institution lies in.
+	Town    *string           `json:"town,omitempty"`
+	Lon     float64           `json:"lon"`
+	Lat     float64           `json:"lat"`
+	Tags    map[string]string `json:"tags,omitempty"`
+	OSMType string            `json:"osmType"`
+	OSMID   int64             `json:"osmId"`
 }
 
 type institutionList struct {
@@ -36,12 +39,13 @@ type institutionList struct {
 
 const institutionColumns = `
 	id, kind, name, school_type,
+	coalesce(nullif(tags->>'addr:city', ''), town),
 	ST_X(geom::geometry), ST_Y(geom::geometry),
 	osm_type, osm_id`
 
 func scanInstitution(rows pgx.Rows) (Institution, error) {
 	var i Institution
-	err := rows.Scan(&i.ID, &i.Kind, &i.Name, &i.SchoolType, &i.Lon, &i.Lat, &i.OSMType, &i.OSMID)
+	err := rows.Scan(&i.ID, &i.Kind, &i.Name, &i.SchoolType, &i.Town, &i.Lon, &i.Lat, &i.OSMType, &i.OSMID)
 	return i, err
 }
 
@@ -196,7 +200,7 @@ func (s *Server) loadInstitution(ctx context.Context, rawID string) (Institution
 	var tags []byte
 	const q = `SELECT ` + institutionColumns + `, tags FROM institutions WHERE id = $1`
 	err = s.pool.QueryRow(ctx, q, id).Scan(
-		&i.ID, &i.Kind, &i.Name, &i.SchoolType, &i.Lon, &i.Lat, &i.OSMType, &i.OSMID, &tags)
+		&i.ID, &i.Kind, &i.Name, &i.SchoolType, &i.Town, &i.Lon, &i.Lat, &i.OSMType, &i.OSMID, &tags)
 	if err == pgx.ErrNoRows {
 		return Institution{}, errNotFound
 	}

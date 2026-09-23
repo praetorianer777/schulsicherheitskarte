@@ -60,14 +60,19 @@ func ImportInstitutions(ctx context.Context, pool *pgxpool.Pool, items []Institu
 	}
 
 	const upsert = `
-		INSERT INTO institutions (osm_type, osm_id, kind, name, school_type, geom, tags, updated_at)
-		SELECT osm_type, osm_id, kind, name, school_type,
-		       ST_SetSRID(ST_MakePoint(lon, lat), 4326)::geography, tags, now()
-		FROM (SELECT DISTINCT ON (osm_type, osm_id) * FROM staging_institutions) s
+		INSERT INTO institutions (osm_type, osm_id, kind, name, school_type, geom, tags, town, district, updated_at)
+		SELECT osm_type, osm_id, kind, name, school_type, point, tags,
+		       boundary_at(point, 'municipality'), boundary_at(point, 'district'), now()
+		FROM (
+			SELECT DISTINCT ON (osm_type, osm_id) *,
+			       ST_SetSRID(ST_MakePoint(lon, lat), 4326)::geography AS point
+			FROM staging_institutions
+		) s
 		ON CONFLICT (osm_type, osm_id) DO UPDATE SET
 			kind = EXCLUDED.kind, name = EXCLUDED.name,
 			school_type = EXCLUDED.school_type, geom = EXCLUDED.geom,
-			tags = EXCLUDED.tags, updated_at = now()`
+			tags = EXCLUDED.tags, town = EXCLUDED.town, district = EXCLUDED.district,
+			updated_at = now()`
 	tag, err := tx.Exec(ctx, upsert)
 	if err != nil {
 		return nil, fmt.Errorf("upsert institutions: %w", err)
