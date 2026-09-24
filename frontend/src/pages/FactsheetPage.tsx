@@ -84,7 +84,8 @@ function Sheet({ sheet }: { sheet: Factsheet }) {
           </h1>
           <p className="text-sm text-ink-muted">
             {kindLabel[institution.kind]}
-            {institution.schoolType ? ` · ${institution.schoolType}` : ""} · Umkreis{" "}
+            {institution.schoolType ? ` · ${institution.schoolType}` : ""}
+            {institution.town ? ` · ${institution.town}` : ""} · Umkreis{" "}
             {sheet.radius} m · Berichtsjahre {sheet.years.from}–{sheet.years.to} · Stand {today}
           </p>
         </header>

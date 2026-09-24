@@ -47,6 +47,24 @@ describe("Startseite", () => {
     expect(last).toContain("bbox=12.4");
   });
 
+  // Three schools around here are called Goetheschule; the town is what tells
+  // them apart in the list.
+  it("nennt in jedem Treffer den Ort", async () => {
+    vi.stubGlobal(
+      "fetch",
+      respondWith({ institutions: [{ ...school, town: "Zwickau" }], sources: [] }),
+    );
+    const user = userEvent.setup();
+    renderApp(<StartPage />);
+    await screen.findByRole("region", { name: /Karte der Region/ });
+
+    await user.type(screen.getByLabelText("Schule oder Kita suchen"), "breuer");
+    await user.click(screen.getByRole("button", { name: "Suchen" }));
+
+    const result = await screen.findByRole("link", { name: /Peter Breuer/ });
+    expect(result).toHaveTextContent("Schule · Zwickau");
+  });
+
   it("ein Treffer zoomt die Karte dorthin", async () => {
     const user = userEvent.setup();
     renderApp(<StartPage />);

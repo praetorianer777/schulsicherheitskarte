@@ -6,8 +6,16 @@
 --
 -- The geography is real: St. Egidien in the pilot region.
 
-TRUNCATE accidents, institutions, infrastructure, hotspots, reports, report_confirmations
-  RESTART IDENTITY CASCADE;
+TRUNCATE accidents, institutions, infrastructure, hotspots, reports, report_confirmations,
+  boundaries RESTART IDENTITY CASCADE;
+
+-- Two municipalities, as squares. The Kita has no address in OpenStreetMap, so
+-- the only way to find it by its town is through the boundary it lies in.
+INSERT INTO boundaries (osm_id, kind, name, ags, admin_level, geom) VALUES
+  (417026, 'municipality', 'St. Egidien', '14524280', 8,
+   ST_GeogFromText('SRID=4326;MULTIPOLYGON(((12.61 50.775,12.65 50.775,12.65 50.80,12.61 50.80,12.61 50.775)))')),
+  (417027, 'municipality', 'Lichtenstein/Sachsen', '14524160', 8,
+   ST_GeogFromText('SRID=4326;MULTIPOLYGON(((12.61 50.74,12.65 50.74,12.65 50.775,12.61 50.775,12.61 50.74)))'));
 
 INSERT INTO institutions (osm_type, osm_id, kind, name, school_type, geom, tags) VALUES
   ('way',  1001, 'school',       'Grundschule St. Egidien', 'Grundschule',
@@ -16,6 +24,11 @@ INSERT INTO institutions (osm_type, osm_id, kind, name, school_type, geom, tags)
    ST_MakePoint(12.6400, 50.7900)::geography, '{"amenity":"kindergarten"}'),
   ('way',  1003, 'school',       'Oberschule Lichtenstein', 'Oberschule',
    ST_MakePoint(12.6300, 50.7600)::geography, '{"amenity":"school"}');
+
+-- What the importer does on its upsert.
+UPDATE institutions SET
+  town = boundary_at(geom, 'municipality'),
+  district = boundary_at(geom, 'district');
 
 -- Around the Grundschule, all due north of it so the distances are easy to
 -- follow (0.0001 degrees of latitude is 11.1 m):

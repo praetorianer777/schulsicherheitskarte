@@ -7,6 +7,8 @@ export type Institution = {
   kind: "school" | "kindergarten";
   name: string | null;
   schoolType?: string;
+  /** addr:city, or else the municipality the institution lies in. */
+  town?: string;
   lon: number;
   lat: number;
   osmType: string;

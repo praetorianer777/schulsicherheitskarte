@@ -145,6 +145,7 @@ export default function InstitutionPage() {
           <p className="text-ink-muted">
             {kindLabel[current.kind]}
             {current.schoolType ? ` · ${current.schoolType}` : ""}
+            {current.town ? ` · ${current.town}` : ""}
           </p>
         </div>
         <Link
