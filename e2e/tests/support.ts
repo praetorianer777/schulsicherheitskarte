@@ -6,6 +6,9 @@ export const colours = {
   accident: { r: 0xd0, g: 0x3b, b: 0x3b },
   institution: { r: 0x0b, g: 0x0b, b: 0x0b },
   report: { r: 0xe8, g: 0x7b, b: 0xa4 },
+  // Two steps of the overview's ramp.
+  nearbyNone: { r: 0xa0, g: 0x7c, b: 0xdb },
+  nearbyFiveToFourteen: { r: 0x68, g: 0x44, b: 0x9c },
 };
 
 type Colour = (typeof colours)[keyof typeof colours];

@@ -67,3 +67,9 @@ export function describeOffset(
   if (Math.abs(east) >= 10) parts.push(east > 0 ? "östlich" : "westlich");
   return `${distance} m ${parts.join(" und ")} der Einrichtung`;
 }
+
+/** The overview's figure for one institution, in words. */
+export function describeNearby(count: number | null | undefined, radius: number): string {
+  if (count == null) return "Unfälle im Umkreis noch nicht gezählt";
+  return `${formatNumber(count)} ${count === 1 ? "Unfall" : "Unfälle"} im Umkreis von ${formatNumber(radius)} m`;
+}

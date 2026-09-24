@@ -1,10 +1,16 @@
-import { Map as MapLibreMap, NavigationControl } from "maplibre-gl";
-import type { GeoJSONSource, MapMouseEvent } from "maplibre-gl";
+import { Map as MapLibreMap, NavigationControl, Popup } from "maplibre-gl";
+import type {
+  DataDrivenPropertyValueSpecification,
+  ExpressionSpecification,
+  GeoJSONSource,
+  MapMouseEvent,
+} from "maplibre-gl";
 import { useEffect, useRef, useState } from "react";
 import type { FeatureCollection } from "geojson";
 
 import type { Institution } from "../api/types";
-import { mapColours } from "../lib/palette";
+import { describeNearby, institutionName } from "../lib/format";
+import { mapColours, nearbyRadiusMetres, nearbySteps, type NearbyStep } from "../lib/palette";
 
 /** The official German basemap: no key, and it carries its own attribution. */
 const styleURL = "https://sgx.geodatenzentrum.de/gdz_basemapde_vektor/styles/bm_web_col.json";
@@ -18,6 +24,8 @@ type Props = {
   institutions: Institution[];
   /** Search hits to bring into view; one hit zooms in, several are framed. */
   focus: Institution[] | null;
+  /** Draw each point by its accidents nearby, or all alike. */
+  scaled: boolean;
   onViewChange: (bbox: BBox) => void;
   onSelect: (id: number) => void;
 };
@@ -29,8 +37,46 @@ function institutionFeatures(institutions: Institution[]): FeatureCollection {
       type: "Feature",
       id: i.id,
       geometry: { type: "Point", coordinates: [i.lon, i.lat] },
-      properties: { id: i.id, kind: i.kind, name: i.name ?? "" },
+      properties: {
+        id: i.id,
+        kind: i.kind,
+        name: institutionName(i),
+        // -1 for "not counted yet": MapLibre expressions have no null to step on.
+        nearby: i.accidentsNearby ?? -1,
+      },
     })),
+  };
+}
+
+type Paint = {
+  colour: DataDrivenPropertyValueSpecification<string>;
+  radius: DataDrivenPropertyValueSpecification<number>;
+};
+
+function stepped<T extends string | number>(
+  pick: (step: NearbyStep) => T,
+): ExpressionSpecification {
+  const [first, ...rest] = nearbySteps;
+  // The spec types a step expression as a fixed-length tuple; one built from a
+  // list of any length has to be asserted into it.
+  return [
+    "step",
+    ["get", "nearby"],
+    pick(first),
+    ...rest.flatMap((step) => [step.from, pick(step)]),
+  ] as unknown as ExpressionSpecification;
+}
+
+/**
+ * An uncounted institution keeps the plain look instead of the lightest step,
+ * which would claim it had no accidents around it.
+ */
+function pointPaint(scaled: boolean): Paint {
+  if (!scaled) return { colour: mapColours.institution, radius: 7 };
+  const uncounted: ExpressionSpecification = ["<", ["get", "nearby"], 0];
+  return {
+    colour: ["case", uncounted, mapColours.institution, stepped((step) => step.colour)],
+    radius: ["case", uncounted, 7, stepped((step) => step.radius)],
   };
 }
 
@@ -40,7 +86,14 @@ function boundsOf(points: { lon: number; lat: number }[]): BBox {
   return [Math.min(...lons), Math.min(...lats), Math.max(...lons), Math.max(...lats)];
 }
 
-export default function OverviewMap({ extent, institutions, focus, onViewChange, onSelect }: Props) {
+export default function OverviewMap({
+  extent,
+  institutions,
+  focus,
+  scaled,
+  onViewChange,
+  onSelect,
+}: Props) {
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<MapLibreMap | null>(null);
   // State, not a ref, for the same reason as in MapView: what arrives while the
@@ -48,6 +101,7 @@ export default function OverviewMap({ extent, institutions, focus, onViewChange,
   const [ready, setReady] = useState(false);
   const select = useRef(onSelect);
   const viewChange = useRef(onViewChange);
+  const initiallyScaled = useRef(scaled);
   useEffect(() => {
     select.current = onSelect;
     viewChange.current = onViewChange;
@@ -110,12 +164,26 @@ export default function OverviewMap({ extent, institutions, focus, onViewChange,
         source: "institutions",
         filter: ["!", ["has", "point_count"]],
         paint: {
-          "circle-radius": 7,
-          "circle-color": mapColours.institution,
+          "circle-radius": pointPaint(initiallyScaled.current).radius,
+          "circle-color": pointPaint(initiallyScaled.current).colour,
           "circle-stroke-color": mapColours.ring,
           "circle-stroke-width": 2,
         },
       });
+
+      // The figure on hover, in words: the colour is only the overview, and the
+      // point is too small to carry a number.
+      const hover = new Popup({ closeButton: false, closeOnClick: false, offset: 10 });
+      instance.on("mousemove", "institution-points", (event: MapMouseEvent) => {
+        const feature = instance.queryRenderedFeatures(event.point, {
+          layers: ["institution-points"],
+        })[0];
+        if (!feature) return;
+        const nearby = Number(feature.properties?.nearby);
+        const text = `${feature.properties?.name ?? ""} — ${describeNearby(nearby < 0 ? null : nearby, nearbyRadiusMetres)}`;
+        hover.setLngLat(event.lngLat).setText(text).addTo(instance);
+      });
+      instance.on("mouseleave", "institution-points", () => hover.remove());
 
       instance.on("click", "institution-points", (event: MapMouseEvent) => {
         const feature = instance.queryRenderedFeatures(event.point, {
@@ -154,6 +222,13 @@ export default function OverviewMap({ extent, institutions, focus, onViewChange,
     // Created once; the extent is where it opens, not something it follows.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!map.current || !ready) return;
+    const paint = pointPaint(scaled);
+    map.current.setPaintProperty("institution-points", "circle-color", paint.colour);
+    map.current.setPaintProperty("institution-points", "circle-radius", paint.radius);
+  }, [scaled, ready]);
 
   useEffect(() => {
     if (!map.current || !ready) return;

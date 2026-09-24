@@ -94,6 +94,7 @@ Landkreis Zwickau: … of 443 found by their town — 246 by addr:city, … only
 Landkreis Zwickau/crossings: 2201 written, 0 removed
 Landkreis Zwickau/speed_limits: 15417 written, 0 removed
 8332 accidents clustered into 1426 hotspots, counting back from reporting year 2025
+443 institutions: accidents within 500 m counted for the overview
 ```
 
 Der OSM-Import fragt die **Overpass-API** ab, einen ehrenamtlich betriebenen Dienst.
@@ -301,6 +302,11 @@ Grenzen als „skipped“.
 
 **Schwerpunktliste ist leer, Unfälle sind aber da** — `importer hotspots` wurde nicht
 ausgeführt. Er läuft nicht automatisch, weil er die Tabelle vollständig ersetzt.
+
+**Auf der Startseite sind Punkte schwarz statt violett** — diese Einrichtungen sind nach
+dem letzten `importer hotspots` dazugekommen, ihre Unfälle im Umkreis sind noch nicht
+gezählt. `importer hotspots` erneut ausführen; nach jedem OSM- oder Unfallimport gehört
+er ohnehin dazu.
 
 **Eine Schule hat keine Unfälle im Umkreis** — das ist oft einfach so. Im Landkreis
 Zwickau haben 154 von 382 benannten Einrichtungen keinen Unfall mit Personenschaden im

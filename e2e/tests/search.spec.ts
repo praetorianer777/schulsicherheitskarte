@@ -12,6 +12,9 @@ test.describe("Suche", () => {
 
     const result = page.getByRole("link", { name: /Grundschule St. Egidien/ });
     await expect(result).toBeVisible();
+    // The same figure the point on the map stands for, and the same one the
+    // institution page opens with.
+    await expect(result).toContainText("6 Unfälle im Umkreis von 500 m");
     await result.click();
 
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Grundschule St. Egidien");

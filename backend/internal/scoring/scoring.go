@@ -30,6 +30,11 @@ const (
 	// accident, and calling it a pattern is what gets a fact sheet dismissed.
 	ClusterRadiusMetres = 50.0
 	ClusterMinAccidents = 2
+
+	// The radius of the one figure the overview shows per institution. It is
+	// the institution page's default radius, so a click on a point opens a page
+	// that starts with the number the point stood for.
+	NearbyRadiusMetres = 500
 )
 
 // Severity codes as published in the Unfallatlas (UKATEGORIE).

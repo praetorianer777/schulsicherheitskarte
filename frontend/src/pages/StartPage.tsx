@@ -4,15 +4,18 @@ import { Link, useNavigate } from "react-router-dom";
 
 import { api } from "../api/client";
 import type { Institution } from "../api/types";
+import OverviewLegend from "../components/OverviewLegend";
 import OverviewMap, { type BBox } from "../components/OverviewMap";
 import SearchBox from "../components/SearchBox";
-import { institutionName, kindLabel } from "../lib/format";
+import { describeNearby, institutionName, kindLabel } from "../lib/format";
+import { nearbyRadiusMetres } from "../lib/palette";
 
 export default function StartPage() {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [view, setView] = useState<BBox | null>(null);
   const [focus, setFocus] = useState<Institution[] | null>(null);
+  const [scaled, setScaled] = useState(true);
 
   const extent = useQuery({ queryKey: ["extent"], queryFn: api.extent });
 
@@ -109,6 +112,9 @@ export default function StartPage() {
                             {kindLabel[institution.kind]}
                             {institution.town ? ` · ${institution.town}` : ""}
                           </span>
+                          <span className="block text-sm text-ink-muted">
+                            {describeNearby(institution.accidentsNearby, nearbyRadiusMetres)}
+                          </span>
                         </Link>
                         <button
                           type="button"
@@ -133,13 +139,17 @@ export default function StartPage() {
           </div>
 
           {extent.isSuccess && extent.data.bbox && (
-            <OverviewMap
-              extent={extent.data.bbox}
-              institutions={inView.data?.institutions ?? []}
-              focus={focus}
-              onViewChange={onViewChange}
-              onSelect={onSelect}
-            />
+            <div className="space-y-3">
+              <OverviewMap
+                extent={extent.data.bbox}
+                institutions={inView.data?.institutions ?? []}
+                focus={focus}
+                scaled={scaled}
+                onViewChange={onViewChange}
+                onSelect={onSelect}
+              />
+              <OverviewLegend scaled={scaled} onScaledChange={setScaled} />
+            </div>
           )}
         </div>
       )}

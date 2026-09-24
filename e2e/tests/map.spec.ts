@@ -7,15 +7,30 @@ async function accidentPixels(page: Page): Promise<number> {
 }
 
 test.describe("Karte im gebauten Image", () => {
-  // The start page opens on the map. The zoom controls are dark too, so only
-  // the canvas is photographed, not the region around it.
-  test("die Startseite zeigt die Einrichtungen auf der Karte", async ({ page }) => {
+  // The start page opens on the map, each point drawn by the accidents within
+  // 500 m. The seed puts six around the Grundschule and none around the other
+  // two, so two steps of the ramp have to be on the canvas. The zoom controls
+  // are dark too, so only the canvas is photographed, not the region around it.
+  test("die Startseite zeigt die Einrichtungen nach Unfällen im Umkreis", async ({ page }) => {
     await withoutBasemap(page);
     await page.goto("/");
     await expect(page.getByRole("region", { name: /Karte der Region/ })).toBeVisible();
 
     const canvas = page.locator("canvas.maplibregl-canvas").first();
-    await expect.poll(() => pixelsOf(canvas, colours.institution), { timeout: 15_000 }).toBeGreaterThan(30);
+    await expect.poll(() => pixelsOf(canvas, colours.nearbyFiveToFourteen), { timeout: 15_000 }).toBeGreaterThan(20);
+    await expect.poll(() => pixelsOf(canvas, colours.nearbyNone)).toBeGreaterThan(20);
+  });
+
+  test("die ungewichtete Ansicht zeigt alle Einrichtungen gleich", async ({ page }) => {
+    await withoutBasemap(page);
+    await page.goto("/");
+    const canvas = page.locator("canvas.maplibregl-canvas").first();
+    await expect.poll(() => pixelsOf(canvas, colours.nearbyFiveToFourteen), { timeout: 15_000 }).toBeGreaterThan(20);
+
+    await page.getByRole("checkbox", { name: "Punkte nach Unfällen im Umkreis zeigen" }).uncheck();
+
+    await expect.poll(() => pixelsOf(canvas, colours.nearbyFiveToFourteen)).toBe(0);
+    await expect.poll(() => pixelsOf(canvas, colours.institution)).toBeGreaterThan(30);
   });
 
   // The map used to draw the basemap and the radius ring and nothing else:

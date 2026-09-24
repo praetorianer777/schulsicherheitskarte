@@ -3,6 +3,7 @@ package api_test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -638,6 +639,38 @@ func TestSearchFindsASchoolByItsTown(t *testing.T) {
 		if strings.Join(got, "|") != strings.Join(c.want, "|") {
 			t.Errorf("%q found %v, want %v (%s)", c.typed, got, c.want, c.why)
 		}
+	}
+}
+
+// The overview draws every point by this figure, and a point that was never
+// counted must arrive as "unknown", not as zero.
+func TestInstitutionsCarryTheirAccidentsNearby(t *testing.T) {
+	f := seed(t)
+	ctx := context.Background()
+	if _, err := f.pool.Exec(ctx, "UPDATE institutions SET accidents_nearby = 3 WHERE id = $1", f.schoolID); err != nil {
+		t.Fatal(err)
+	}
+
+	var raw struct {
+		Institutions []map[string]any `json:"institutions"`
+	}
+	box := fmt.Sprintf("%f,%f,%f,%f", schoolLon-0.1, schoolLat-0.1, schoolLon+0.1, schoolLat+0.1)
+	if status := f.get(t, "/api/institutions?bbox="+box, &raw); status != http.StatusOK {
+		t.Fatalf("status = %d", status)
+	}
+	figures := map[string]any{}
+	for _, i := range raw.Institutions {
+		value, present := i["accidentsNearby"]
+		if !present {
+			t.Fatalf("%v has no accidentsNearby at all", i["name"])
+		}
+		figures[i["name"].(string)] = value
+	}
+	if figures["Goetheschule Meerane"] != float64(3) {
+		t.Errorf("the school carries %v, want 3", figures["Goetheschule Meerane"])
+	}
+	if figures["Kita Pusteblume"] != nil {
+		t.Errorf("the uncounted kindergarten carries %v, want null", figures["Kita Pusteblume"])
 	}
 }
 

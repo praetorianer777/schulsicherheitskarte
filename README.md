@@ -95,7 +95,14 @@ Keine Verhandlungsmasse und kein späterer Aufräumdurchgang. Ziel ist **WCAG 2.
 
 ## Oberfläche
 
-Die Startseite sucht Schulen und Kitas nach Namen. Die Einrichtungsseite zeigt die
+Die Startseite zeigt alle Schulen und Kitas auf einer Karte und sucht sie nach Namen.
+Jeder Punkt steht für die Unfälle mit Personenschaden im Umkreis von 500 m über alle
+importierten Jahre — in fünf Stufen, größer und dunkler, in einem einzigen Violett. Das
+ist keine Ampel: Ohne Verkehrsmengen sagt die Zahl nicht, welcher Schulweg gefährlicher
+ist, und die Zeichenerklärung sagt das auch. Dieselbe Zahl steht in der Trefferliste und
+beim Überfahren eines Punkts; ein Schalter zeigt alle Punkte wieder gleich.
+
+Die Einrichtungsseite zeigt die
 Unfälle im Umkreis auf einer Karte, dazu Kennzahlen, die nach Gefahrenindex sortierten
 Schwerpunkte, die Querungshilfen, Ampeln und Tempolimits ringsum — und jeden einzelnen
 Unfall als Tabellenzeile. Umkreis (250/500/1000 m), Zeitraum und der Schulweg-Blick
