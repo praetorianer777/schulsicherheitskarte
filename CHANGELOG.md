@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Every school and kindergarten can be found by its town, including the ones
+  without an address in OpenStreetMap: the town comes from the municipal
+  boundary it lies in. The Ortsteil works too — "Wüstenbrand" as well as
+  "Hohenstein-Ernstthal".
+- Search results, the institution page and the fact sheet name the town, so
+  schools of the same name in neighbouring places can be told apart.
+- The OSM import says how many institutions are found by their town and how
+  many still are not.
 - The start map shows every school and kindergarten by the accidents with
   personal injury within 500 m, in five steps of one colour, with a legend
   that says what the figure is and what it is not: absolute counts without

@@ -28,7 +28,7 @@ und erzeugt daraus ein druckbares Faktenblatt für die nächste Verkehrsschau.
 | Quelle | Inhalt | Lizenz |
 |---|---|---|
 | [Unfallatlas](https://unfallatlas.statistikportal.de/), Berichtsjahre 2016–2025 | Unfälle mit Personenschaden, Punktgeometrie, Beteiligung von Fuß- und Radverkehr | `dl-de/by-2-0` |
-| [OpenStreetMap](https://www.openstreetmap.org/) über die Overpass-API | Schulen, Kitas, Querungshilfen, Ampeln, verkehrsberuhigende Maßnahmen, Tempolimits | ODbL, Namensnennung „© OpenStreetMap-Mitwirkende“ |
+| [OpenStreetMap](https://www.openstreetmap.org/) über die Overpass-API | Schulen, Kitas, Gemeinde- und Ortsteilgrenzen, Querungshilfen, Ampeln, verkehrsberuhigende Maßnahmen, Tempolimits | ODbL, Namensnennung „© OpenStreetMap-Mitwirkende“ |
 
 ### Was die Daten nicht hergeben
 

@@ -1,0 +1,291 @@
+{
+ "version": 0.6,
+ "generator": "Overpass API 0.7.62.1 084b4234",
+ "osm3s": {
+  "timestamp_osm_base": "2026-09-23T08:00:00Z",
+  "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."
+ },
+ "elements": [
+  {
+   "type": "relation",
+   "id": 417026,
+   "bounds": {},
+   "members": [
+    {
+     "type": "node",
+     "ref": 240084385,
+     "role": "admin_centre",
+     "lat": 50.7869,
+     "lon": 12.6219
+    },
+    {
+     "type": "way",
+     "ref": 1,
+     "role": "outer",
+     "geometry": [
+      {
+       "lat": 50.77,
+       "lon": 12.6
+      },
+      {
+       "lat": 50.77,
+       "lon": 12.64
+      },
+      {
+       "lat": 50.81,
+       "lon": 12.64
+      }
+     ]
+    },
+    {
+     "type": "way",
+     "ref": 2,
+     "role": "outer",
+     "geometry": [
+      {
+       "lat": 50.81,
+       "lon": 12.64
+      },
+      {
+       "lat": 50.81,
+       "lon": 12.6
+      },
+      {
+       "lat": 50.77,
+       "lon": 12.6
+      }
+     ]
+    },
+    {
+     "type": "way",
+     "ref": 3,
+     "role": "inner",
+     "geometry": [
+      {
+       "lat": 50.795,
+       "lon": 12.625
+      },
+      {
+       "lat": 50.795,
+       "lon": 12.635
+      },
+      {
+       "lat": 50.805,
+       "lon": 12.635
+      },
+      {
+       "lat": 50.805,
+       "lon": 12.625
+      },
+      {
+       "lat": 50.795,
+       "lon": 12.625
+      }
+     ]
+    },
+    {
+     "type": "relation",
+     "ref": 8878525,
+     "role": "subarea"
+    }
+   ],
+   "tags": {
+    "boundary": "administrative",
+    "type": "boundary",
+    "admin_level": "8",
+    "name": "St. Egidien",
+    "de:amtlicher_gemeindeschluessel": "14524280"
+   }
+  },
+  {
+   "type": "relation",
+   "id": 8878525,
+   "bounds": {},
+   "members": [
+    {
+     "type": "way",
+     "ref": 4,
+     "role": "outer",
+     "geometry": [
+      {
+       "lat": 50.77,
+       "lon": 12.6
+      },
+      {
+       "lat": 50.77,
+       "lon": 12.62
+      },
+      {
+       "lat": 50.79,
+       "lon": 12.62
+      },
+      {
+       "lat": 50.79,
+       "lon": 12.6
+      },
+      {
+       "lat": 50.77,
+       "lon": 12.6
+      }
+     ]
+    }
+   ],
+   "tags": {
+    "boundary": "administrative",
+    "type": "boundary",
+    "admin_level": "9",
+    "name": "Kuhschnappel"
+   }
+  },
+  {
+   "type": "relation",
+   "id": 62785,
+   "bounds": {},
+   "members": [
+    {
+     "type": "way",
+     "ref": 5,
+     "role": "outer",
+     "geometry": [
+      {
+       "lat": 50.5,
+       "lon": 12.2
+      },
+      {
+       "lat": 50.5,
+       "lon": 12.9
+      },
+      {
+       "lat": 51.0,
+       "lon": 12.9
+      },
+      {
+       "lat": 51.0,
+       "lon": 12.2
+      },
+      {
+       "lat": 50.5,
+       "lon": 12.2
+      }
+     ]
+    }
+   ],
+   "tags": {
+    "boundary": "administrative",
+    "type": "boundary",
+    "admin_level": "6",
+    "name": "Zwickau",
+    "de:amtlicher_gemeindeschluessel": "14524"
+   }
+  },
+  {
+   "type": "relation",
+   "id": 62594,
+   "bounds": {},
+   "members": [
+    {
+     "type": "way",
+     "ref": 6,
+     "role": "outer",
+     "geometry": [
+      {
+       "lat": 50.8,
+       "lon": 12.78
+      },
+      {
+       "lat": 50.8,
+       "lon": 12.85
+      },
+      {
+       "lat": 50.86,
+       "lon": 12.85
+      },
+      {
+       "lat": 50.86,
+       "lon": 12.78
+      },
+      {
+       "lat": 50.8,
+       "lon": 12.78
+      }
+     ]
+    }
+   ],
+   "tags": {
+    "boundary": "administrative",
+    "type": "boundary",
+    "admin_level": "6",
+    "name": "Chemnitz",
+    "de:amtlicher_gemeindeschluessel": "14511000"
+   }
+  },
+  {
+   "type": "relation",
+   "id": 417999,
+   "bounds": {},
+   "members": [
+    {
+     "type": "way",
+     "ref": 7,
+     "role": "outer",
+     "geometry": [
+      {
+       "lat": 50.7,
+       "lon": 12.5
+      },
+      {
+       "lat": 50.7,
+       "lon": 12.51
+      },
+      {
+       "lat": 50.71,
+       "lon": 12.51
+      },
+      {
+       "lat": 50.7,
+       "lon": 12.5
+      }
+     ]
+    }
+   ],
+   "tags": {
+    "boundary": "administrative",
+    "type": "boundary",
+    "admin_level": "8"
+   }
+  },
+  {
+   "type": "relation",
+   "id": 417998,
+   "bounds": {},
+   "members": [
+    {
+     "type": "way",
+     "ref": 8,
+     "role": "outer",
+     "geometry": [
+      {
+       "lat": 50.7,
+       "lon": 12.4
+      },
+      {
+       "lat": 50.7,
+       "lon": 12.45
+      },
+      {
+       "lat": 50.75,
+       "lon": 12.45
+      }
+     ]
+    }
+   ],
+   "tags": {
+    "boundary": "administrative",
+    "type": "boundary",
+    "admin_level": "8",
+    "name": "Halbfertig",
+    "de:amtlicher_gemeindeschluessel": "14524999"
+   }
+  }
+ ]
+}

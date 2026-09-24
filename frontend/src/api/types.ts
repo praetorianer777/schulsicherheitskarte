@@ -9,6 +9,8 @@ export type Institution = {
   schoolType?: string;
   /** Accidents within 500 m over every imported year; null until counted. */
   accidentsNearby?: number | null;
+  /** addr:city, or else the municipality the institution lies in. */
+  town?: string;
   lon: number;
   lat: number;
   osmType: string;

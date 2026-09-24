@@ -88,7 +88,9 @@ Erwartete Ausgabe für den Landkreis Zwickau:
 2016: 151673 rows read, 150756 outside the configured regions, 917 newly imported
 …
 2025: 273007 rows read, 272207 outside the configured regions, 800 newly imported
+Landkreis Zwickau: … municipal and district boundaries written, 0 removed, 0 skipped because their ways do not close
 Landkreis Zwickau: 443 schools and kindergartens written, 0 gone from OpenStreetMap and removed
+Landkreis Zwickau: … of 443 found by their town — 246 by addr:city, … only through the municipal boundaries; … still without a town
 Landkreis Zwickau/crossings: 2201 written, 0 removed
 Landkreis Zwickau/speed_limits: 15417 written, 0 removed
 8332 accidents clustered into 1426 hotspots, counting back from reporting year 2025
@@ -283,6 +285,20 @@ docker compose -f deploy/docker-compose.yml exec -T postgres psql -U ssk -d ssk 
 
 Für den Landkreis Zwickau stehen dort 443, 8332 und 1426. Fehlt in `import_runs` eine
 Zeile `osm … succeeded`, dann Abschnitt 3 nachholen.
+
+**Eine Einrichtung wird über ihren Ort nicht gefunden** — der Ort kommt aus `addr:city`
+oder, wo OpenStreetMap keine Adresse hat, aus der Gemeindegrenze, in der sie liegt. Die
+Zusammenfassung des OSM-Imports sagt, wie viele noch ohne Ort sind; welche es sind:
+
+```bash
+docker compose -f deploy/docker-compose.yml exec -T postgres psql -U ssk -d ssk \
+  -c "select name, town, district from institutions
+        where town is null and coalesce(tags->>'addr:city', '') = '';"
+```
+
+Liegt eine davon mitten in einer Gemeinde, fehlt deren Grenze — meist, weil die Relation
+in OpenStreetMap gerade bearbeitet wird und sich nicht schließt. Der Import meldet solche
+Grenzen als „skipped“.
 
 **Schwerpunktliste ist leer, Unfälle sind aber da** — `importer hotspots` wurde nicht
 ausgeführt. Er läuft nicht automatisch, weil er die Tabelle vollständig ersetzt.

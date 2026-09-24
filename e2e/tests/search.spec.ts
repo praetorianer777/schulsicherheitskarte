@@ -42,6 +42,22 @@ test.describe("Suche", () => {
     await expect(page.getByText(/wurde nichts gefunden/)).toBeVisible();
   });
 
+  // The Kita has neither the town in its name nor an address in
+  // OpenStreetMap; only the municipal boundary it lies in says where it is.
+  test("findet eine Kita über ihren Ort, auch ohne Adresse", async ({ page }) => {
+    await page.goto("/");
+    await page.getByLabel("Schule oder Kita suchen").fill("egidien");
+    await page.getByRole("button", { name: "Suchen" }).click();
+
+    const kita = page.getByRole("link", { name: /Kita Sonnenschein/ });
+    await expect(kita).toBeVisible();
+    await expect(kita).toContainText("St. Egidien");
+
+    await kita.click();
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Kita Sonnenschein");
+    await expect(page.getByText("Kita · St. Egidien")).toBeVisible();
+  });
+
   // The whole journey without touching the mouse: this is the one that decides
   // whether the site is usable for people who never use one.
   test("ist von der Suche bis zur Einrichtung mit der Tastatur bedienbar", async ({ page }) => {

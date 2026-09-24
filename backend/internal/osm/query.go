@@ -18,6 +18,7 @@ const (
 	QueryInstitutions = "institutions"
 	QueryCrossings    = "crossings"
 	QuerySpeedLimits  = "speed_limits"
+	QueryBoundaries   = "boundaries"
 )
 
 // InstitutionsQuery asks for schools and kindergartens. They are mapped as
@@ -54,5 +55,23 @@ func SpeedLimitsQuery(b BBox) string {
 	box := b.overpass()
 	return fmt.Sprintf(`[out:json][timeout:180];
 way["highway"]["maxspeed"](%[1]s);
+out geom tags;`, box)
+}
+
+// BoundariesQuery asks for the municipalities and their districts, with the
+// full geometry of every member way: a relation only becomes an area once its
+// rings are assembled, and that needs all of them, not just the part inside
+// the box.
+//
+// Level 6 is asked for only with an eight-digit Gemeindeschlüssel: that is a
+// kreisfreie Stadt. Without the filter every Landkreis that touches the box
+// comes back as well, each one megabytes of geometry that names no town.
+func BoundariesQuery(b BBox) string {
+	box := b.overpass()
+	return fmt.Sprintf(`[out:json][timeout:180];
+(
+  relation["boundary"="administrative"]["admin_level"~"^(8|9)$"](%[1]s);
+  relation["boundary"="administrative"]["admin_level"="6"]["de:amtlicher_gemeindeschluessel"~"^[0-9]{8}$"](%[1]s);
+);
 out geom tags;`, box)
 }

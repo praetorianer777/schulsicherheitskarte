@@ -674,6 +674,55 @@ func TestInstitutionsCarryTheirAccidentsNearby(t *testing.T) {
 	}
 }
 
+// 197 of 443 institutions in the pilot region have no addr:city. Their town
+// comes from the municipal boundary they lie in, and has to be as searchable
+// and as visible as one from the address.
+func TestSearchFindsASchoolByTheTownItLiesIn(t *testing.T) {
+	f := seed(t)
+	const q = `INSERT INTO institutions (osm_type, osm_id, kind, name, geom, tags, town, district)
+		VALUES ('node', $1, 'school', $2, ST_MakePoint($3, $4)::geography, $5, $6, $7)`
+	ctx := context.Background()
+	if _, err := f.pool.Exec(ctx, q, 920, "Grundschule am Park", schoolLon, schoolLat,
+		[]byte(`{}`), "Hohenstein-Ernstthal", "Wüstenbrand"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.pool.Exec(ctx, q, 921, "Oberschule", schoolLon, schoolLat,
+		[]byte(`{"addr:city":"Hohenstein-Er."}`), "Hohenstein-Ernstthal", nil); err != nil {
+		t.Fatal(err)
+	}
+
+	towns := func(typed string) map[string]string {
+		t.Helper()
+		var body institutionListBody
+		if status := f.get(t, "/api/institutions?q="+url.QueryEscape(typed), &body); status != http.StatusOK {
+			t.Fatalf("%q: status = %d", typed, status)
+		}
+		found := map[string]string{}
+		for _, i := range body.Institutions {
+			town := "<none>"
+			if i.Town != nil {
+				town = *i.Town
+			}
+			found[*i.Name] = town
+		}
+		return found
+	}
+
+	got := towns("hohenstein ernstthal")
+	if got["Grundschule am Park"] != "Hohenstein-Ernstthal" {
+		t.Errorf("the school without an address: %v", got)
+	}
+	// Where both exist the address wins: it is what the school writes on its
+	// letters, and the boundary only stands in for it.
+	if got["Oberschule"] != "Hohenstein-Er." {
+		t.Errorf("the school with addr:city shows %q", got["Oberschule"])
+	}
+
+	if got := towns("wuestenbrand"); len(got) != 1 || got["Grundschule am Park"] == "" {
+		t.Errorf("the district finds %v, want the school in it", got)
+	}
+}
+
 func TestExtentCoversEveryInstitution(t *testing.T) {
 	f := seed(t)
 	var e api.Extent
